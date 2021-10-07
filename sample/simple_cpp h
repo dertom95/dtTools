@@ -1,0 +1,15 @@
+/*block:class*/
+class /*name:name*/Test/***/ {
+public:
+    /*name:name*/Test/***/();    
+/*block:field*/    inline int /*name:name|pre:Get|fu*/GetIntValue/*endref*/() { return intValue; }
+    inline void /*name:name|pre:Set|fu*/SetInvValue(/*map:type*/int/*endmap*/ /*name:name*/intValue/***/) { this.intValue=intValue; }
+/*endblock:field*/    
+private:
+/*block:field*/    /*map:type:int*/int/*endmap*/ /*name:name*/intValue/***/=0;
+/*endblock:field*/
+/*block:rip*/    /*map:type:float*/float/*endmap*/ floatValue=0.0f;
+    /*map:type:float*/float/*endmap*/ floatValue=0.0f;
+/*endblock:rip*/
+};
+/*endblock:class*/

@@ -1,0 +1,11 @@
+{
+    "rootname" : "root",
+    "templates" : [
+        {
+            "path":"simple_cpp.h"
+        },        
+        {
+            "path":"block.test"
+        }
+    ]
+}

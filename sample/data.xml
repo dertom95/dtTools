@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+
+<root>
+    <class name="Fortuna">
+        <field name="playerCount" type="int"/>
+        <field name="coachName" type="string"/>
+        <field name="speed" type="float"/>
+    </class>
+</root>
