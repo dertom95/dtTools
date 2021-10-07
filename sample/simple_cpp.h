@@ -4,8 +4,8 @@
 class /*name:name*/Test/*endname*/ {
 public:
     /*name:name*/Test/*endname*/();    
-/*block:field*/    inline int /*name:name|fu|pre:Get*/GetIntValue/*endname*/() { return /*name:name*/intValue/*endname*/; }
-    inline void /*name:name|fu|pre:Set*/SetInvValue/*endname*/(/*name:type*/int/*endname*/ /*name:name*/intValue/*endname*/) { this->/*name:name*/intValue/*endname*/=/*name:name*/intValue/*endname*/; }
+/*block:field*/    inline /*name:type|enum:int,vartype*/int/*endname*/ /*name:name|fu|pre:Get*/GetIntValue/*endname*/() { return /*name:name*/intValue/*endname*/; }
+    inline void /*name:name|fu|pre:Set*/SetInvValue/*endname*/(/*name:type|enum:int,vartype*/int/*endname*/ /*name:name*/intValue/*endname*/) { this->/*name:name*/intValue/*endname*/=/*name:name*/intValue/*endname*/; }
 /*endblock:field*/    
 private:
 /*block:field*/    /*name:type|enum:int,vartype*/int/*endname*/ /*name:name*/intValue/*endname*/=0;

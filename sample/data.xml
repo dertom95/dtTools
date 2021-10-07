@@ -6,4 +6,12 @@
         <field name="coachName" type="string"/>
         <field name="speed" type="float"/>
     </class>
+
+    <b1>
+        <b2></b2>
+        <b2></b2>
+        <b2></b2>
+        <b3></b3>
+        <b2></b2>
+    </b1> 
 </root>
