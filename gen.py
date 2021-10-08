@@ -84,13 +84,32 @@ class TTName:
         name = self.apply_decorators(name)
         return name
 
+class TTOutput:
+    def __init__(self,output_string):
+        split = output_string.split(',')
+        self.output_block = split[0]
+        self.attrib,self.attrib_value = split[1].split('==')
+
+    def check(self,xml):
+        if self.attrib in xml.attrib:
+            xml_value = xml.attrib[self.attrib]
+            if xml_value==self.attrib_value:
+                return self.output_block
+        return None
+
 class TTBlock:
 
 
     def __init__(self,block_name,all_lines,inner_lines,ctx):
         self.ctx=ctx
         self.template=ctx.current_template
-        self.block_name=block_name
+        
+        bn_splits = block_name.split('|')
+        self.block_name=bn_splits[0]
+        self.decorators=[]
+        if len(bn_splits)>1:
+            self.decorators=bn_splits[1:]
+
         self.all_lines=all_lines
         self.inner_lines=inner_lines
 
@@ -98,10 +117,25 @@ class TTBlock:
         self.child_blocks = {}
         self.block_id = C.create_id()
         self.names = {}
+        self.outputs = []
+
+        self.execute_decorators()
+        
+
+    def execute_decorators(self):
+        for decorator in self.decorators:
+            splits=decorator.split(":")
+            deco_id=splits[0]
+
+            if deco_id=="output":
+                output=TTOutput(splits[1])
+                self.outputs.append(output)
+
 
     def add_block(self,block):
         if block.block_name not in self.child_blocks:
             self.child_blocks[block.block_name]=[]
+            self.template.blocks[block.block_name]=self.child_blocks[block.block_name]
 
         self.child_blocks[block.block_name].append(block)
 
@@ -116,7 +150,21 @@ class TTBlock:
     def set_parent(self,block):
         self.parent_block=block
 
-    def get_marker(self):
+    def get_marker(self,xml=None):
+        if xml is not None:
+            for output in self.outputs:
+                output_block = output.check(xml)
+                if output_block:
+                    try:
+                        alternative_outputs = self.template.blocks[output_block]
+                        if len(alternative_outputs)>1:
+                            os.abort("Alternative output:%s must be unique" % output_block)
+                        
+                        alternative_output = alternative_outputs[0]
+                        return alternative_output.get_marker(xml)
+                    except:
+                        os.abort("Alternative output:%s must be present in ctx" % output_block)
+
         return "|<#%s#>|" % self.block_id
 
     def find_name(self,text):
@@ -174,6 +222,7 @@ class TTBlock:
 class TTTemplate:
     def __init__(self,name):
         self.root_block=None
+        self.blocks={}
         self.name=name
 
     def set_root_block(self,block):
@@ -265,7 +314,10 @@ class TTGenerator:
         self.token_block_end_any = "%s(EB|endblock):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
 
     def re_find_full_block(self,blockname,text):
-        p = ("%s(B|block):%s%s(.*?)%s(EB|endblock):%s%s") % (C.delimiter_start,blockname,C.delimiter_end,C.delimiter_start,blockname,C.delimiter_end)
+        blockname_splits=blockname.split('|')
+        blockname_simple=blockname_splits[0]
+        blockname=re.escape(blockname)
+        p = ("%s(B|block):%s%s(.*?)%s(EB|endblock):%s%s") % (C.delimiter_start,blockname,C.delimiter_end,C.delimiter_start,blockname_simple,C.delimiter_end)
         print("Find full block for blockname:%s with pattern %s" % (blockname,p) )
         res = re.search( p,text,re.MULTILINE | re.DOTALL)
         return res
@@ -397,7 +449,7 @@ class TTGenerator:
 
         # inject block data into 'current_result' but add the blockmarker again at the end for multiple block usage
         for current_block in current_blocks:
-            block_marker = current_block.get_marker()
+            block_marker = current_block.get_marker(xml)
             current_result = current_result.replace(block_marker,current_block.inner_lines+"\n"+block_marker) 
 
             # try to fill in names
