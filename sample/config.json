@@ -1,11 +1,13 @@
 {
-    "rootname" : "root",
-    "templates" : [
+    "rootname": "root",
+    "templates": [
         {
-            "path":"simple_cpp.h"
-        },        
+            "name": "cppheader",
+            "path": "simple_cpp.h"
+        },
         {
-            "path":"block.test"
+            "name": "blocktest",
+            "path": "block.test"
         }
     ]
 }

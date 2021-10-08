@@ -4,7 +4,7 @@
 class /*name:name*/Test/*endname*/ {
 public:
     /*name:name*/Test/*endname*/();    
-/*block:field*/    // this is the getter from /*name:class.name*/Fortuna/*endname*/./*name:name*/intvalue/*endname*/
+/*block:field*/    // this is the getter from /*name:root.ips*/Fortuna/*endname*/./*name:name*/intvalue/*endname*/
     inline /*name:type|enum:int,ctype*/int/*endname*/ /*name:name|fu|pre:Get*/GetIntValue/*endname*/() { return /*name:name*/intValue/*endname*/; }
     inline void /*name:name|fu|pre:Set*/SetInvValue/*endname*/(/*name:type|enum:int,ctype*/int/*endname*/ /*name:name*/intValue/*endname*/) { this->/*name:name*/intValue/*endname*/=/*name:name*/intValue/*endname*/; }
 /*endblock:field*/    

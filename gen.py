@@ -40,6 +40,8 @@ class TTName:
     def get_marker(self):
         return "|<#%s#>|" % self.name_id
 
+    def has_scope(self):
+        return self.scope is not None
 
     def apply_decorators(self,name):
         for decorator in self.decorators:
@@ -155,11 +157,13 @@ class TTBlock:
     def has_name(self,name):
         return name in self.names
 
-    def execute_name(self,name,value,input_text,ctx):
+    def execute_name(self,name,value,input_text,ctx,include_scoped=True):
         if not self.has_name(name):
             return input_text
         
         for name in self.names[name]:
+            if not include_scoped and name.has_scope():
+                continue
             name_result = name.execute(value)
             name_marker = name.get_marker()
             input_text = input_text.replace(name_marker,name_result)
@@ -168,8 +172,9 @@ class TTBlock:
 
 
 class TTTemplate:
-    def __init__(self):
+    def __init__(self,name):
         self.root_block=None
+        self.name=name
 
     def set_root_block(self,block):
         self.root_block=block
@@ -184,7 +189,11 @@ class ParseContext:
         self.current_block=None
         self.current_template=None
         self.current_scope=None
+        self.current_xmlscope=None
         self.enums={}
+        self.templates={}
+        self.xml_current=None
+        self.xml_root=None
 
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
@@ -203,7 +212,30 @@ class ParseContext:
         if not item_name in enum:
             return None
         
-        return enum[item_name]        
+        return enum[item_name]    
+
+    # def find_block_in_scope(self,blockname):
+    #     block_splits = blockname.split('.')
+        
+    #     current = block_splits.pop(0)
+    #     found_start = False
+    #     # find beginning
+    #     for scope in self.current_scope:
+    #         if scope.block_name==current:
+    #             if not found_start:
+    #                 found_start=True
+                
+    #             if not block_splits:
+    #                 return scope
+
+    #             current=block_splits.pop(0)
+    #         else:
+    #             if found_start:
+    #                 return None
+        
+    #     return None
+
+
 
 class TTGenerator:
     def __init__(self, config_filepath):
@@ -242,6 +274,7 @@ class TTGenerator:
         self.ctx = ParseContext()
 
         for template in C.config[C.CONFIG_TEMPLATES]:
+            template_name = template["name"]
             template_path = template["path"]
             if not os.path.isabs(template_path):
                 template_path = C.config_folder+"/"+template_path
@@ -251,7 +284,8 @@ class TTGenerator:
             
             with open(template_path) as f:
                 lines = f.read()
-                self.ctx.current_template=_template=template["template"]=TTTemplate()
+                self.ctx.current_template=_template=template["template"]=TTTemplate(template_name)
+                self.ctx.templates[template_name]=_template
                 root_block = self.parseTemplate(self.ctx,lines)
                 _template.set_root_block(root_block)
             
@@ -310,20 +344,55 @@ class TTGenerator:
         return self.executeFromXml(root)
 
     def executeFromXml(self,root):
-        results=[]
+        self.ctx.xml_root=root
+        self.ctx.xml_current=root
+        result={}
+        template_results=[]
         if root.tag==C.root_name:
             for template in C.config[C.CONFIG_TEMPLATES]:
-                result = self.executeTemplate(template["template"],root)
-                results.append({"template":template,"result":result})
-        return results
+                template_result = self.executeTemplate(template["template"],root)
+                template_results.append({"template":template,"result":template_result})
+        result["template_results"]=template_results
+        result["context"]=self.ctx
+        return result
+
+    def find_xml_for_scope(self,scope_signature):
+        block_splits = scope_signature.split('.')
+        block_splits.reverse()
+        
+        current = block_splits.pop(0)
+        xml_scope = []+self.ctx.current_xmlscope
+        xml_scope.reverse()
+
+        found_start = False
+        # find beginning
+        while True:
+            current_xml = xml_scope.pop(0)            
+            if current_xml.tag==current:
+                if not found_start:
+                    found_start=True
+                
+                if not block_splits:
+                    return current_xml
+
+                current=block_splits.pop(0)
+            else:
+                if found_start:
+                    return None
+            
+        return None
+
 
     def executeTemplate(self,template,xml,current_result=None,current_blocks=None,calllist=None):
         current_tag = xml.tag
 
+        self.ctx.xml_current=xml
+        
         if not current_blocks:
             current_blocks = [template.get_root_block()]
             current_result = current_blocks[0].inner_lines
             calllist=[]
+            self.ctx.current_xmlscope=[xml]
 
         # inject block data into 'current_result' but add the blockmarker again at the end for multiple block usage
         for current_block in current_blocks:
@@ -334,7 +403,17 @@ class TTGenerator:
             for attrib_key in xml.attrib:
                 attrib_value=xml.attrib[attrib_key]
                 # replace name-markers with the attrib value
-                current_result = current_block.execute_name(attrib_key,attrib_value,current_result,self.ctx)
+                current_result = current_block.execute_name(attrib_key,attrib_value,current_result,self.ctx,False)
+
+            # scoped names
+            for stName in current_block.names:
+                names = current_block.names[stName]
+                for name in names:
+                    if name.has_scope():
+                        scope_xml = self.find_xml_for_scope(name.scope)
+                        value = scope_xml.attrib[name.name]
+                        scope_result = name.execute(value)
+                        current_result = current_result.replace(name.get_marker(),scope_result)
 
             for xml_child in xml:
                 child_tag = xml_child.tag
@@ -342,9 +421,11 @@ class TTGenerator:
                 new_blocks = current_block.get_block_with_name(child_tag)
                 if new_blocks:
                     calllist.append(current_block)
+                    self.ctx.current_xmlscope.append(xml_child)
                     self.ctx.current_scope=calllist
                     current_result = self.executeTemplate(template,xml_child,current_result,new_blocks,calllist)
                     calllist.remove(current_block)
+                    self.ctx.current_xmlscope.remove(xml_child)
 
         return current_result
 
@@ -357,26 +438,8 @@ class TTGenerator:
 gen = TTGenerator("sample/config.json")
 gen.parseTemplates()
 
-gen_data = [
-    { "class" : 
-        {
-            "name" : "Exporter",
-            "field":  [
-                {
-                    "name" : "intValue",
-                    "type" : "int"
-                },
-                {
-                    "name" : "floatValue",
-                    "type" : "float"
-                }
-            ]
-        }
-    }
-]
-
-results = gen.executeFromFile("/home/ttrocha/_dev/projects/python/simplegenerator/sample/data.xml")
-
+result = gen.executeFromFile("/home/ttrocha/_dev/projects/python/simplegenerator/sample/data.xml")
+results = result["template_results"]
 counter=0
 for result in results:
     filename = "output%s.h" % counter

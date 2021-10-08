@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<root>
+<root ips="UPS">
     <class name="Fortuna">
         <field name="playerCount" type="int"/>
         <field name="coachName" type="string"/>
