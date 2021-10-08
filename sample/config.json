@@ -6,6 +6,10 @@
             "path": "simple_cpp.h"
         },
         {
+            "name": "cppbody",
+            "path": "simple_cpp.cpp"
+        },        
+        {
             "name": "blocktest",
             "path": "block.test"
         }

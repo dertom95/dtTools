@@ -351,6 +351,7 @@ class TTGenerator:
         if root.tag==C.root_name:
             for template in C.config[C.CONFIG_TEMPLATES]:
                 template_result = self.executeTemplate(template["template"],root)
+                template_result = re.sub("\|<#.*?#>\|","",template_result)
                 template_results.append({"template":template,"result":template_result})
         result["template_results"]=template_results
         result["context"]=self.ctx
