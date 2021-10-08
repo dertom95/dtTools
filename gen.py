@@ -19,12 +19,13 @@ class C:
         return C.current_block_counter
 
 class TTName:
-    def __init__(self,data,default_value,template):
+    def __init__(self,data,default_value,ctx,scope=None):
         self.data = data
         self.default_value=default_value
         self.name_id = C.create_id()
         self.decorators=[]
-        self.template=template
+        self.ctx=ctx
+        self.scope=scope
 
         name_info = data.split('|')
         self.name = name_info[0]
@@ -53,12 +54,24 @@ class TTName:
                 name = name + splits[1]
             elif deco_id =="enum":
                 info = splits[1].split(",")
-                enum_item_name=info[0]
-                enum_name=info[1]
-                if name=="init":
-                    self.template.add_enum(enum_name,enum_item_name,self.default_value)
+                
+                enum_item_name=None
+                enum_name=None
+
+                if len(info)==1:
+                    enum_name=info[0]
                 else:
-                    name = self.template.get_enum(enum_name,name)
+                    enum_item_name=info[0]
+                    enum_name=info[1]
+
+                if name=="init":
+                    if enum_item_name:
+                        self.ctx.add_enum(enum_name,enum_item_name,self.default_value)
+                    else:
+                        # ignore add_enum for this decorator as it is just reading the enum
+                        pass
+                else:
+                    name = self.ctx.get_enum(enum_name,name)
             else:
                 print("Unsupported decorator:%s for name %s" % (decorator,self.name) )
                 #os.abort("Unsupported decorator:%s for name" % (decorator,self.name) )
@@ -72,8 +85,9 @@ class TTName:
 class TTBlock:
 
 
-    def __init__(self,block_name,all_lines,inner_lines,template):
-        self.template=template
+    def __init__(self,block_name,all_lines,inner_lines,ctx):
+        self.ctx=ctx
+        self.template=ctx.current_template
         self.block_name=block_name
         self.all_lines=all_lines
         self.inner_lines=inner_lines
@@ -117,9 +131,19 @@ class TTBlock:
 
             name_all = res.group(0)
             name_data = res.group(2)
+            # check for scopes
+            name_name=None
+            name_scope=None
+            last_dot_pos = name_data.rfind('.')
+            if last_dot_pos==-1:
+                name_name=name_data
+            else:
+                name_name=name_data[last_dot_pos+1:]
+                name_scope=name_data[:last_dot_pos]
+
             name_default = res.group(3)
 
-            name = TTName(name_data,name_default,self.template)
+            name = TTName(name_name,name_default,self.ctx,name_scope)
             self.inner_lines = self.inner_lines.replace(name_all,name.get_marker(),1)
             
             if name.name not in self.names:
@@ -131,7 +155,7 @@ class TTBlock:
     def has_name(self,name):
         return name in self.names
 
-    def execute_name(self,name,value,input_text):
+    def execute_name(self,name,value,input_text,ctx):
         if not self.has_name(name):
             return input_text
         
@@ -146,13 +170,21 @@ class TTBlock:
 class TTTemplate:
     def __init__(self):
         self.root_block=None
-        self.enums={}
 
     def set_root_block(self,block):
         self.root_block=block
 
     def get_root_block(self):
         return self.root_block
+
+
+
+class ParseContext:
+    def __init__(self):
+        self.current_block=None
+        self.current_template=None
+        self.current_scope=None
+        self.enums={}
 
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
@@ -171,18 +203,16 @@ class TTTemplate:
         if not item_name in enum:
             return None
         
-        return enum[item_name]
-
-class ParseContext:
-    def __init__(self):
-        self.current_block=None
+        return enum[item_name]        
 
 class TTGenerator:
     def __init__(self, config_filepath):
         C.config_file_path = os.path.abspath(config_filepath)
         C.config_folder = os.path.dirname(C.config_file_path)
 
-        self.current_template=None
+        self.current_template = None
+        self.ctx = None
+
         C.config = json.load(open(C.config_file_path))
         self.create_default_configs()
         self.parseTemplates()
@@ -209,7 +239,7 @@ class TTGenerator:
         return res
 
     def parseTemplates(self):
-        ctx = ParseContext()
+        self.ctx = ParseContext()
 
         for template in C.config[C.CONFIG_TEMPLATES]:
             template_path = template["path"]
@@ -221,14 +251,13 @@ class TTGenerator:
             
             with open(template_path) as f:
                 lines = f.read()
-                self.current_template=_template=template["template"]=TTTemplate()
-                root_block = self.parseTemplate(template,lines)
+                self.ctx.current_template=_template=template["template"]=TTTemplate()
+                root_block = self.parseTemplate(self.ctx,lines)
                 _template.set_root_block(root_block)
             
-            print(ctx,lines)
 
-    def parseTemplate(self,template,lines):
-        root_block=TTBlock("root",lines,lines,template)
+    def parseTemplate(self,ctx,lines):
+        root_block=TTBlock("root",lines,lines,ctx)
         allblocks=[]
         allblocks=self.parseBlocks(root_block,lines,allblocks)
 
@@ -258,7 +287,7 @@ class TTGenerator:
 
             all = result.group(0)
             innertext = result.group(2)
-            block = TTBlock(block_name,all,innertext,self.current_template)
+            block = TTBlock(block_name,all,innertext,self.ctx)
             allblocks.append(block)
 
             if current_block:
@@ -305,7 +334,7 @@ class TTGenerator:
             for attrib_key in xml.attrib:
                 attrib_value=xml.attrib[attrib_key]
                 # replace name-markers with the attrib value
-                current_result = current_block.execute_name(attrib_key,attrib_value,current_result)
+                current_result = current_block.execute_name(attrib_key,attrib_value,current_result,self.ctx)
 
             for xml_child in xml:
                 child_tag = xml_child.tag
@@ -313,6 +342,7 @@ class TTGenerator:
                 new_blocks = current_block.get_block_with_name(child_tag)
                 if new_blocks:
                     calllist.append(current_block)
+                    self.ctx.current_scope=calllist
                     current_result = self.executeTemplate(template,xml_child,current_result,new_blocks,calllist)
                     calllist.remove(current_block)
 

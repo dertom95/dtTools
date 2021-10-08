@@ -4,21 +4,6 @@
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="https://www.w3schools.com note.xsd">
 
-<name orderid="1">Urho3DNodeTreeExporter</name>
-<intValue>1</intValue>
-
-<note>
-   <to></to> 
-   <from></from>
-   <heading></heading>
-   <body></body>
-</note>
-
-<!-- <note2>
-    <to2></to2>
-    <from2></from2>
-    <heading2></heading2>
-    <body2></body2>
-</note2> -->
-
-</notes> 
+    
+<SomeElement color="red"/>
+</dotnet>

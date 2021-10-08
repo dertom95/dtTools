@@ -1,17 +1,17 @@
 BlockTest
 
 /*B:b1*/
-block1
+block1 /*name:type|enum:ctype*/int/*endname*/
 
 /*block:b2*/
-b2
+b2 /*name:type|enum:ctype*/int/*endname*/
 
 asd
 
 /*EB:b2*/
 
 /*block:b3*/
-b3
+b3  
 
 asadasdadsdd
 

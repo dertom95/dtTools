@@ -7,9 +7,9 @@
         <field name="speed" type="float"/>
     </class>
 
-    <b1>
-        <b2></b2>
-        <b2></b2>
+    <b1 type="int">
+        <b2 type="float"></b2>
+        <b2 type="string"></b2>
         <b2></b2>
         <b3></b3>
         <b2></b2>
