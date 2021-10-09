@@ -2,11 +2,17 @@
 
 <root ips="UPS">
     <class name="Fortuna">
-        <field name="playerCount" type="int"/>
+        <field name="playerCount" type="int" default="11"/>
         <field name="coachName" type="string"/>
         <field name="speed" type="float"/>
         <method name="KickIt" type="float" scope="private"/>
         <method name="Execute" type="int" scope="public"/>
+    </class>
+
+    <class name="Borussia">
+        <field name="idiots" type="int" default="1895"/>
+        <field name="coachName" type="string" default="ristic"/>
+        <field name="speeder" type="float" default="9.81f"/>
     </class>
 
     <b1 type="int">

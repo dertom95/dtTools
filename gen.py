@@ -440,7 +440,7 @@ class TTGenerator:
         current_tag = xml.tag
 
         self.ctx.xml_current=xml
-        
+        block_markers=[]
         if not current_blocks:
             current_blocks = [template.get_root_block()]
             current_result = current_blocks[0].inner_lines
@@ -451,6 +451,13 @@ class TTGenerator:
         for current_block in current_blocks:
             block_marker = current_block.get_marker(xml)
             current_result = current_result.replace(block_marker,current_block.inner_lines+"\n"+block_marker) 
+
+            inner_markers = re.findall( "\|<#.*?#>\|",current_block.inner_lines,re.MULTILINE | re.DOTALL)
+            if inner_markers:
+                for imarker in inner_markers:
+                    if imarker not in block_markers:
+                        block_markers.append(imarker)
+                    
 
             # try to fill in names
             for attrib_key in xml.attrib:
@@ -479,6 +486,11 @@ class TTGenerator:
                     current_result = self.executeTemplate(template,xml_child,current_result,new_blocks,calllist)
                     calllist.remove(current_block)
                     self.ctx.current_xmlscope.remove(xml_child)
+        
+        # remove markers added by this block
+        a=0
+        for marker in block_markers:
+            current_result=current_result.replace(marker,"")
 
         return current_result
 

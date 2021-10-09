@@ -10,11 +10,11 @@ public:
 /*endblock:field*/    
 /*block:publicSection*/ /*endblock:publicSection*/
 private:
-/*block:field*/    /*name:type|enum:int,ctype*/int/*endname*/ /*name:name*/intValue/*endname*/=0;
+/*block:field*/    /*name:type|enum:int,ctype*/int/*endname*/ /*name:name*/intValue/*endname*//*name:default|pre:=*/=0/*endname*/;
 /*endblock:field*/
-/*block:rip*/    /*name:type|enum:float,ctype*/float/*endname*/ floatValue=0.0f;
-    /*name:type|enum:bool,ctype*/float/*endname*/ boolValue=0.0f;
-    /*name:type|enum:string,ctype*/const char* /*endname*/ floatValue="";
+/*block:rip*/    /*name:type|enum:float,ctype|post:default,f*/float/*endname*/ floatValue=0.0f;
+    /*name:type|enum:bool,ctype*/bool/*endname*/ floatValue=true;
+    /*name:type|enum:string,ctype|wrap:default,"*/const char* /*endname*/ strValue="";
 /*endblock:rip*/
 /*block:method|output:privateSection,scope==private|output:publicSection,scope==public*/    /*name:type|enum:void,ctype*/void/*endname*/ /*name:name*/voidMethod/*endname*/();
 /*endblock:method*/
