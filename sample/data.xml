@@ -12,7 +12,7 @@
     <class name="Borussia">
         <field name="idiots" type="int" default="1895"/>
         <field name="coachName" type="string" default="ristic"/>
-        <field name="speeder" type="float" default="9.81f"/>
+        <field name="speeder" type="float" default="9.81"/>
     </class>
 
     <b1 type="int">

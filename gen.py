@@ -41,8 +41,7 @@ class TTName:
         name_info = data.split('|')
         self.name = name_info[0]
 
-        for i in range(1,len(name_info)):
-            self.decorators.append(name_info[i])
+        self.decorators=name_info[1:]
 
         # fake apply for global decorators (enum)
         self.apply_decorators("init")
@@ -60,10 +59,16 @@ class TTName:
             deco_id = splits[0]
 
             if deco_id == "fu":
+                if not self.ctx.runtime_mode:
+                    continue
                 name = name[0].upper() + name[1:]
             elif deco_id =="pre":
+                if not self.ctx.runtime_mode:
+                    continue
                 name = splits[1] + name
             elif deco_id =="post":
+                if not self.ctx.runtime_mode:
+                    continue
                 name = name + splits[1]
             elif deco_id =="enum":
                 info = splits[1].split(",")
@@ -85,6 +90,16 @@ class TTName:
                         pass
                 else:
                     name = self.ctx.get_enum(enum_name,name)
+            elif deco_id=="enum_mod":
+                if not self.ctx.runtime_mode:
+                    continue
+
+                enum_tag,enum_type,pattern=splits[1].split(",")
+                name_scope,name_name = get_scope_and_name(enum_tag)
+                value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+                if value==enum_type:
+                    name = pattern % (name,)
+                    continue
             else:
                 print("Unsupported decorator:%s for name %s" % (decorator,self.name) )
                 #os.abort("Unsupported decorator:%s for name" % (decorator,self.name) )
@@ -199,12 +214,6 @@ class TTBlock:
         res = re.search( p,text)
         return res
 
-    def find_command(self,text):
-        p = ("%s(cmd|C):(.*?)%s(.*?)%s(endcmd|endname)%s") % (C.delimiter_start,C.delimiter_end,C.delimiter_start,C.delimiter_end)
-#        res = re.search( p,text,re.MULTILINE | re.DOTALL)
-        res = re.search( p,text)
-        return res
-
     def process_names(self):
         while True:
             res = self.find_name(self.inner_lines)
@@ -269,6 +278,7 @@ class ParseContext:
         self.xml_current=None
         self.xml_root=None
         self.ttg = None
+        self.runtime_mode = False
 
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
@@ -417,6 +427,7 @@ class TTGenerator:
         return allblocks
 
     def executeFromFile(self,xml_data_path,config=None):
+        self.ctx.runtime_mode=True
         # TODO: combine configs somehow
         tree = ET.parse(xml_data_path)
         root = tree.getroot()
@@ -470,7 +481,7 @@ class TTGenerator:
             scope_splits = scope.split('.')
             
         scope_xml = self.find_xml_for_scope(scope)
-        if scope_xml:
+        if scope_xml is not None:
             value = scope_xml.attrib[key]        
             return value
         else:
