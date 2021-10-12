@@ -1,6 +1,17 @@
 import json,os,sys,re
 import xml.etree.ElementTree as ET
 
+def get_scope_and_name(name_data):
+    name_name=None
+    name_scope=None
+    last_dot_pos = name_data.rfind('.')
+    if last_dot_pos==-1:
+        name_name=name_data
+    else:
+        name_name=name_data[last_dot_pos+1:]
+        name_scope=name_data[:last_dot_pos]  
+    return name_scope,name_name  
+
 class C:
     current_block_counter = 1000
     CONFIG_TEMPLATES    ="templates"
@@ -103,7 +114,7 @@ class TTBlock:
     def __init__(self,block_name,all_lines,inner_lines,ctx):
         self.ctx=ctx
         self.template=ctx.current_template
-        
+
         bn_splits = block_name.split('|')
         self.block_name=bn_splits[0]
         self.decorators=[]
@@ -118,11 +129,12 @@ class TTBlock:
         self.block_id = C.create_id()
         self.names = {}
         self.outputs = []
+        self.filename=None
 
         self.execute_decorators()
         
 
-    def execute_decorators(self):
+    def execute_decorators(self,runtime=None):
         for decorator in self.decorators:
             splits=decorator.split(":")
             deco_id=splits[0]
@@ -130,7 +142,21 @@ class TTBlock:
             if deco_id=="output":
                 output=TTOutput(splits[1])
                 self.outputs.append(output)
+            elif deco_id=="file":
+                if not runtime:
+                    continue
 
+                file_splits = splits[1].split(',')
+                filenameString = file_splits[0]
+                vars = ()
+                for var in file_splits[1:]:
+                    name_scope,name_name=get_scope_and_name(var)
+                    value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+                    vars+=(value,)
+
+                self.filename = filenameString % vars
+
+                
 
     def add_block(self,block):
         if block.block_name not in self.child_blocks:
@@ -173,6 +199,12 @@ class TTBlock:
         res = re.search( p,text)
         return res
 
+    def find_command(self,text):
+        p = ("%s(cmd|C):(.*?)%s(.*?)%s(endcmd|endname)%s") % (C.delimiter_start,C.delimiter_end,C.delimiter_start,C.delimiter_end)
+#        res = re.search( p,text,re.MULTILINE | re.DOTALL)
+        res = re.search( p,text)
+        return res
+
     def process_names(self):
         while True:
             res = self.find_name(self.inner_lines)
@@ -182,14 +214,7 @@ class TTBlock:
             name_all = res.group(0)
             name_data = res.group(2)
             # check for scopes
-            name_name=None
-            name_scope=None
-            last_dot_pos = name_data.rfind('.')
-            if last_dot_pos==-1:
-                name_name=name_data
-            else:
-                name_name=name_data[last_dot_pos+1:]
-                name_scope=name_data[:last_dot_pos]
+            name_scope,name_name = get_scope_and_name(name_data)
 
             name_default = res.group(3)
 
@@ -243,6 +268,7 @@ class ParseContext:
         self.templates={}
         self.xml_current=None
         self.xml_root=None
+        self.ttg = None
 
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
@@ -324,6 +350,7 @@ class TTGenerator:
 
     def parseTemplates(self):
         self.ctx = ParseContext()
+        self.ctx.ttg = self
 
         for template in C.config[C.CONFIG_TEMPLATES]:
             template_name = template["name"]
@@ -410,6 +437,9 @@ class TTGenerator:
         return result
 
     def find_xml_for_scope(self,scope_signature):
+        if not scope_signature:
+            return self.ctx.xml_current
+
         block_splits = scope_signature.split('.')
         block_splits.reverse()
         
@@ -435,6 +465,16 @@ class TTGenerator:
             
         return None
 
+    def get_scoped_value(self,scope,key):
+        if not key:
+            scope_splits = scope.split('.')
+            
+        scope_xml = self.find_xml_for_scope(scope)
+        if scope_xml:
+            value = scope_xml.attrib[key]        
+            return value
+        else:
+            os.abort("Unknown scoped value  [%s.]%s" % (scope,key))
 
     def executeTemplate(self,template,xml,current_result=None,current_blocks=None,calllist=None):
         current_tag = xml.tag
@@ -470,10 +510,11 @@ class TTGenerator:
                 names = current_block.names[stName]
                 for name in names:
                     if name.has_scope():
-                        scope_xml = self.find_xml_for_scope(name.scope)
-                        value = scope_xml.attrib[name.name]
+                        value = self.get_scoped_value(name.scope,name.name)
                         scope_result = name.execute(value)
                         current_result = current_result.replace(name.get_marker(),scope_result)
+
+            current_block.execute_decorators(True)
 
             for xml_child in xml:
                 child_tag = xml_child.tag
@@ -492,7 +533,15 @@ class TTGenerator:
         for marker in block_markers:
             current_result=current_result.replace(marker,"")
 
-        return current_result
+        if current_block.filename:
+            # save this block as dedicated file and do not include to result
+            current_result = current_result.replace(block_marker,"")
+            f = open(current_block.filename,"w")
+            f.write(current_result)
+            f.close()
+            return block_marker
+        else:
+            return current_result
 
 
         
