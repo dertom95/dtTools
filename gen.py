@@ -4,13 +4,20 @@ import xml.etree.ElementTree as ET
 def get_scope_and_name(name_data):
     name_name=None
     name_scope=None
+    name_decos=None
+
+    first = name_data.find('|')
+    if first!=-1:
+        name_decos=name_data[first:]
+        name_data=name_data[:first]
+
     last_dot_pos = name_data.rfind('.')
     if last_dot_pos==-1:
         name_name=name_data
     else:
         name_name=name_data[last_dot_pos+1:]
         name_scope=name_data[:last_dot_pos]  
-    return name_scope,name_name  
+    return name_scope,name_name,name_decos 
 
 class C:
     current_block_counter = 1000
@@ -95,7 +102,7 @@ class TTName:
                     continue
 
                 enum_tag,enum_type,pattern=splits[1].split(",")
-                name_scope,name_name = get_scope_and_name(enum_tag)
+                name_scope,name_name,name_decos = get_scope_and_name(enum_tag)
                 value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
                 if value==enum_type:
                     name = pattern % (name,)
@@ -165,7 +172,7 @@ class TTBlock:
                 filenameString = file_splits[0]
                 vars = ()
                 for var in file_splits[1:]:
-                    name_scope,name_name=get_scope_and_name(var)
+                    name_scope,name_name,name_decos=get_scope_and_name(var)
                     value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
                     vars+=(value,)
 
@@ -222,12 +229,16 @@ class TTBlock:
 
             name_all = res.group(0)
             name_data = res.group(2)
+
             # check for scopes
-            name_scope,name_name = get_scope_and_name(name_data)
+            name_scope,name_name,name_decos = get_scope_and_name(name_data)
 
             name_default = res.group(3)
+            name_with_decos = name_name
+            if name_decos:
+                name_with_decos+=name_decos
 
-            name = TTName(name_name,name_default,self.ctx,name_scope)
+            name = TTName(name_with_decos,name_default,self.ctx,name_scope)
             self.inner_lines = self.inner_lines.replace(name_all,name.get_marker(),1)
             
             if name.name not in self.names:

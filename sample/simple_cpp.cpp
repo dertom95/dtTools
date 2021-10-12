@@ -1,6 +1,6 @@
-#include "simple_cpp.h"
+/*block:class|file:%s.cpp,name*/
+#include /*name:name|pre:"|post:.h"*/"simple_cpp.h"/*endname*/
 
-/*block:class*/
 /*name:name*/Test/*endname*/::/*name:name*/Test/*endname*/()
 {}
 
