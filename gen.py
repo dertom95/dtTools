@@ -344,7 +344,7 @@ class TTGenerator:
 
     def parseTemplate(self,ctx,lines):
         root_block=TTBlock("root",lines,lines,ctx)
-        allblocks=[]
+        allblocks=[root_block]
         allblocks=self.parseBlocks(root_block,lines,allblocks)
 
         for block in allblocks:
