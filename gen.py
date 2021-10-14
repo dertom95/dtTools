@@ -462,9 +462,9 @@ class TTGenerator:
 
             return enum_type
 
-        def create_xsd_for_struct(name,current_struct,xml_doc,xml_current):
+        def create_xsd_for_struct(elem_name,current_struct,xml_doc,xml_current):
             xml_elem = xml_doc.createElement("xs:element")
-            xml_elem.setAttribute("name",name)
+            xml_elem.setAttribute("name",elem_name)
 
             xml_current.appendChild(xml_elem)
             xml_current = xml_elem
@@ -491,12 +491,10 @@ class TTGenerator:
                     struct = current_struct[tag]
                     create_xsd_for_struct(tag,struct,xml_doc,xml_current)
 
+            a=0
             for name in names:
                 name_data = current_names[name]
                 
-                if name_data.has_scope():
-                    continue
-
                 name_type = name_data.get_enum_type() or "xs:string"
 
                 xml_attrib = xml_doc.createElement("xs:attribute")
