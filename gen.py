@@ -1,5 +1,6 @@
 import json,os,sys,re
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
 
 def get_scope_and_name(name_data):
     name_name=None
@@ -44,6 +45,7 @@ class TTName:
         self.decorators=[]
         self.ctx=ctx
         self.scope=scope
+        self.enum_type=None
 
         name_info = data.split('|')
         self.name = name_info[0]
@@ -59,6 +61,9 @@ class TTName:
 
     def has_scope(self):
         return self.scope is not None
+
+    def get_enum_type(self):
+        return self.enum_type
 
     def apply_decorators(self,name):
         for decorator in self.decorators:
@@ -92,6 +97,7 @@ class TTName:
                 if name=="init":
                     if enum_item_name:
                         self.ctx.add_enum(enum_name,enum_item_name,self.default_value)
+                        self.enum_type=enum_name
                     else:
                         # ignore add_enum for this decorator as it is just reading the enum
                         pass
@@ -155,6 +161,35 @@ class TTBlock:
 
         self.execute_decorators()
         
+
+    def merge_block(self,current_struct,scope_dict,layer=0):
+        result = '\t'*layer+self.block_name+'\n'
+
+        work_struct=current_struct.get(self.block_name)
+        if not work_struct:
+            work_struct=current_struct[self.block_name]={"__names":{}}
+
+        name_dict=work_struct["__names"]
+        
+        for name in self.names:
+            name_data = self.names[name][0]
+            if name_data.has_scope():
+                last_block = name_data.scope.split('.').pop()
+                scope_struct=scope_dict.get(last_block)
+                if scope_struct and name not in scope_struct["__names"]:
+                    scope_struct["__names"][name]=name_data
+            elif name not in name_dict:
+                name_dict[name]=name_data
+
+        for blockName in self.child_blocks:
+            block_list = self.child_blocks[blockName]
+            for inner_block in block_list:
+                scope_dict[self.block_name]=work_struct
+                result += inner_block.merge_block(work_struct,scope_dict,layer+1)
+                scope_dict.pop(self.block_name,None)
+
+        return result
+
 
     def execute_decorators(self,runtime=None):
         for decorator in self.decorators:
@@ -388,7 +423,103 @@ class TTGenerator:
                 self.ctx.templates[template_name]=_template
                 root_block = self.parseTemplate(self.ctx,lines)
                 _template.set_root_block(root_block)
-            
+
+    def generateXSD(self,xsd_name):
+        namespace="https://%s.com" % xsd_name
+        data_struct = {}
+
+        # merge structs from all templates
+        for template in C.config[C.CONFIG_TEMPLATES]:
+            _template=template["template"]
+            template_name = template["name"]            
+            block = _template.get_root_block()
+            result = block.merge_block(data_struct,{})
+            print("--%s--\n%s"%(template_name,result))
+
+        xml_doc = minidom.Document()
+        
+        xml_root = xml_doc.createElement("xs:schema")
+        xml_root.setAttribute('xmlns:xs','http://www.w3.org/2001/XMLSchema')
+        xml_root.setAttribute('targetNamespace',namespace)
+        xml_root.setAttribute('xmlns',namespace)
+        xml_root.setAttribute('elementFormDefault',"qualified")
+        xml_doc.appendChild(xml_root)
+
+        def create_enum_type(xml_doc,xml_root,name,enum_values):
+            enum_type = xml_doc.createElement("xs:simpleType")
+            enum_type.setAttribute('name',name)
+            enum_type.setAttribute('final','restriction') # what is this for?
+            xml_root.appendChild(enum_type)
+
+            enum_restriction = xml_doc.createElement("xs:restriction")
+            enum_restriction.setAttribute("base","xs:string")
+            enum_type.appendChild(enum_restriction)
+
+            for value in enum_values:
+                enum_value = xml_doc.createElement("xs:enumeration")
+                enum_value.setAttribute("value",value)
+                enum_restriction.appendChild(enum_value)
+
+            return enum_type
+
+        def create_xsd_for_struct(name,current_struct,xml_doc,xml_current):
+            xml_elem = xml_doc.createElement("xs:element")
+            xml_elem.setAttribute("name",name)
+
+            xml_current.appendChild(xml_elem)
+            xml_current = xml_elem
+
+            xml_complex = xml_doc.createElement("xs:complexType")
+            xml_current.appendChild(xml_complex)
+            xml_current = xml_complex
+
+            # add names as xml-attribute
+            current_names = current_struct["__names"]
+            names = sorted(current_names.keys())
+
+            # now process nested structs                
+            if len(current_struct)>1:
+                xml_choice = xml_doc.createElement("xs:choice")
+                xml_choice.setAttribute("minOccurs","0")
+                xml_choice.setAttribute("maxOccurs","unbounded")
+                xml_current.appendChild(xml_choice)
+                xml_current = xml_choice
+
+                for tag in sorted(current_struct.keys()):
+                    if tag=="__names":
+                        continue
+                    struct = current_struct[tag]
+                    create_xsd_for_struct(tag,struct,xml_doc,xml_current)
+
+            for name in names:
+                name_data = current_names[name]
+                
+                if name_data.has_scope():
+                    continue
+
+                name_type = name_data.get_enum_type() or "xs:string"
+
+                xml_attrib = xml_doc.createElement("xs:attribute")
+                xml_attrib.setAttribute("name",name)
+                xml_attrib.setAttribute("type",name_type)
+                # TODO: required
+                xml_complex.appendChild(xml_attrib)
+
+        # create enum-types in xml
+        for enum_name in self.ctx.enums:
+            enum = self.ctx.enums[enum_name]
+            sorted_keys = sorted(enum.keys())
+            create_enum_type(xml_doc,xml_root,enum_name,sorted_keys)
+
+        #iterate of structs
+        for struct_name in sorted(data_struct.keys()):
+            struct=data_struct[struct_name]
+            create_xsd_for_struct(struct_name,struct,xml_doc,xml_root)
+
+        xsd_result = xml_doc.toprettyxml()
+        #print("STRUCT:%s" % data_struct)
+        #print("XSD: %s" % xsd_result)
+        return xsd_result
 
     def parseTemplate(self,ctx,lines):
         root_block=TTBlock("root",lines,lines,ctx)
@@ -566,20 +697,21 @@ class TTGenerator:
             return current_result
 
 
-        
-            
-        
-
 
 gen = TTGenerator("sample/config.json")
 gen.parseTemplates()
-
+xsd_schema = gen.generateXSD("clazz")
 result = gen.executeFromFile("/home/ttrocha/_dev/projects/python/simplegenerator/sample/data.xml")
 results = result["template_results"]
-counter=0
-for result in results:
-    filename = "output%s.h" % counter
-    counter+=1
-    f = open(filename,"w")
-    f.write(result["result"])
-    f.close()
+
+f = open("clazz.xsd","w")
+f.write(xsd_schema)
+f.close()
+
+#counter=0
+# for result in results:
+#     filename = "output%s.h" % counter
+#     counter+=1
+#     f = open(filename,"w")
+#     f.write(result["result"])
+#     f.close()
