@@ -20,6 +20,13 @@ def get_scope_and_name(name_data):
         name_scope=name_data[:last_dot_pos]  
     return name_scope,name_name,name_decos 
 
+def strip_tag(tag):
+    ns_char = tag.rfind('}')
+    if ns_char==-1:
+        return tag
+    
+    return tag[ns_char+1:]
+
 class C:
     current_block_counter = 1000
     CONFIG_TEMPLATES    ="templates"
@@ -292,7 +299,7 @@ class TTBlock:
         for name in self.names[name]:
             if not include_scoped and name.has_scope():
                 continue
-            name_result = name.execute(value)
+            name_result = name.execute(value) or "(ERROR:%s)"%name
             name_marker = name.get_marker()
             input_text = input_text.replace(name_marker,name_result)
 
@@ -578,7 +585,11 @@ class TTGenerator:
         self.ctx.xml_current=root
         result={}
         template_results=[]
-        if root.tag==C.root_name:
+
+
+        
+        tag = strip_tag(root.tag)
+        if tag==C.root_name:
             for template in C.config[C.CONFIG_TEMPLATES]:
                 template_result = self.executeTemplate(template["template"],root)
                 template_result = re.sub("\|<#.*?#>\|","",template_result)
@@ -602,7 +613,8 @@ class TTGenerator:
         # find beginning
         while True:
             current_xml = xml_scope.pop(0)            
-            if current_xml.tag==current:
+            current_tag = strip_tag(current_xml.tag)
+            if current_tag==current:
                 if not found_start:
                     found_start=True
                 
@@ -622,13 +634,16 @@ class TTGenerator:
             
         scope_xml = self.find_xml_for_scope(scope)
         if scope_xml is not None:
-            value = scope_xml.attrib[key]        
-            return value
+            try:
+                value = scope_xml.attrib[key]        
+                return value
+            except:
+                return None
         else:
             os.abort("Unknown scoped value  [%s.]%s" % (scope,key))
 
     def executeTemplate(self,template,xml,current_result=None,current_blocks=None,calllist=None):
-        current_tag = xml.tag
+        current_tag = strip_tag(xml.tag)
 
         self.ctx.xml_current=xml
         block_markers=[]
@@ -662,13 +677,16 @@ class TTGenerator:
                 for name in names:
                     if name.has_scope():
                         value = self.get_scoped_value(name.scope,name.name)
-                        scope_result = name.execute(value)
+                        scope_result = ""
+                        # TODO: maybe we want in the None-case something like default values or such? maybe a decorator for that?
+                        if value is not None:
+                            scope_result = name.execute(value)
                         current_result = current_result.replace(name.get_marker(),scope_result)
 
             current_block.execute_decorators(True)
 
             for xml_child in xml:
-                child_tag = xml_child.tag
+                child_tag = strip_tag(xml_child.tag)
 
                 new_blocks = current_block.get_block_with_name(child_tag)
                 if new_blocks:
@@ -699,7 +717,7 @@ class TTGenerator:
 gen = TTGenerator("sample/config.json")
 gen.parseTemplates()
 xsd_schema = gen.generateXSD("clazz")
-result = gen.executeFromFile("/home/ttrocha/_dev/projects/python/simplegenerator/sample/data.xml")
+result = gen.executeFromFile("/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml")
 results = result["template_results"]
 
 f = open("clazz.xsd","w")
