@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<root xmlns="https://dtData.com"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="https://dtData.com ../output/aa/dtData.xsd">
+
+<class name="SettlerDataComponent">
+    <field name="age" type="int"/>
+    <field name="speed" type="float"/>
+    <method name="killSettler"/>
+    <method name="marry"/>
+</class>
+
+</root>

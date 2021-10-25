@@ -1,6 +1,10 @@
+#!/usr/bin/python3
+
 import json,os,sys,re
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+
+generation_root=None
 
 def get_scope_and_name(name_data):
     name_name=None
@@ -705,24 +709,66 @@ class TTGenerator:
         if current_block.filename:
             # save this block as dedicated file and do not include to result
             current_result = current_result.replace(block_marker,"")
-            f = open(current_block.filename,"w")
+            f = open("%s/%s" %(generation_root,current_block.filename),"w")
             f.write(current_result)
             f.close()
             return block_marker
         else:
             return current_result
 
+import argparse
+parser = argparse.ArgumentParser(description='Add some integers.')
+# parser.add_argument('integers', metavar='N', type=int, nargs='+',
+#                     help='interger list')
+                    
+parser.add_argument('--config-file', type=str, 
+                    help='path to dtGen-configuration-file',required=True)
+parser.add_argument('--gen-input-file', type=str, 
+                    help='path to generation input-data-file')
+parser.add_argument('--gen-root-folder', type=str, default="./generated",
+                    help='output root path for generated files')
 
+parser.add_argument('--xsd-schema-name', type=str, default="dtGen",
+                    help='name of the schema')
+parser.add_argument('--xsd-output', type=str, 
+                    help='path to xsd output-file')                   
 
-gen = TTGenerator("sample/config.json")
+args = parser.parse_args()
+
+gen = TTGenerator(args.config_file)
 gen.parseTemplates()
-xsd_schema = gen.generateXSD("clazz")
-result = gen.executeFromFile("/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml")
-results = result["template_results"]
 
-f = open("clazz.xsd","w")
-f.write(xsd_schema)
-f.close()
+did_action = False
+
+if hasattr(args,"xsd_output"):
+    xsd_schema = gen.generateXSD(args.xsd_schema_name) # clazz
+    xsd_file_path = os.path.abspath(args.xsd_output)
+    xsd_folder = os.path.dirname(xsd_file_path)
+    try:
+        os.makedirs(xsd_folder)
+    except:
+        pass        
+    f = open(xsd_file_path,"w")
+    f.write(xsd_schema)
+    f.truncate()
+    f.close()
+    did_action=True
+
+if hasattr(args,"gen_input_file"):
+    # "/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml"
+    generation_root = os.path.abspath(args.gen_root_folder)
+    try:
+        os.makedirs(generation_root)
+    except:
+        pass
+
+    result = gen.executeFromFile(args.gen_input_file)
+    results = result["template_results"]
+    did_action=True
+
+if not did_action:
+    print("neither --xsd-output nor --input-file were set!!! NOTHING TO DO")    
+
 
 #counter=0
 # for result in results:

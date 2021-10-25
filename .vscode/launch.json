@@ -1,0 +1,34 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "dtGen: create schema",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen.py",
+            "args" : [
+                "--config-file","sample/config.json",
+                "--xsd-schema-name","dtData",
+                "--xsd-output","output/aa/dtData.xsd"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "dtGen: generate data",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "args" : [
+                "--config-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/config.json",
+                "--xsd-schema-name","dtData",
+                "--xsd-output","output/aa/dtData.xsd",
+                "--gen-input-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/simple_inputdata.xml"
+            ],
+            "cwd": "/home/ttrocha/_dev/ALWAYSDEL/gen",
+            "console": "integratedTerminal"
+        }        
+    ]
+}
