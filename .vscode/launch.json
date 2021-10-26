@@ -17,7 +17,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "dtGen: generate data",
+            "name": "dtGen(outside): generate data",
             "type": "python",
             "request": "launch",
             "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
@@ -28,6 +28,19 @@
                 "--gen-input-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/simple_inputdata.xml"
             ],
             "cwd": "/home/ttrocha/_dev/ALWAYSDEL/gen",
+            "console": "integratedTerminal"
+        },        
+        {
+            "name": "dtGen: generate data",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "args" : [
+                "--config-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/config.json",
+                "--xsd-schema-name","dtData",
+                "--xsd-output","output/dtData.xsd",
+                "--gen-input-file","sample/simple_inputdata.xml"
+            ],
             "console": "integratedTerminal"
         }        
     ]

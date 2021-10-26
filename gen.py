@@ -57,6 +57,7 @@ class TTName:
         self.ctx=ctx
         self.scope=scope
         self.enum_type=None
+        self.required=False
 
         name_info = data.split('|')
         self.name = name_info[0]
@@ -93,6 +94,10 @@ class TTName:
                 if not self.ctx.runtime_mode:
                     continue
                 name = name + splits[1]
+            elif deco_id =="required":
+                if self.ctx.runtime_mode:
+                    continue
+                self.required=True
             elif deco_id =="enum":
                 info = splits[1].split(",")
                 
@@ -184,12 +189,22 @@ class TTBlock:
         
         for name in self.names:
             name_data = self.names[name][0]
+
+            def is_required_name(name):
+                for n in self.names[name]:
+                    if n.required:
+                        return True
+                return False
+
+            # check if any of the names is required. 
+            name_data.required = is_required_name(name_data.name)
+
             if name_data.has_scope():
                 last_block = name_data.scope.split('.').pop()
                 scope_struct=scope_dict.get(last_block)
                 if scope_struct and name not in scope_struct["__names"]:
                     scope_struct["__names"][name]=name_data
-            elif name not in name_dict:
+            elif name not in name_dict or name_data.required:
                 name_dict[name]=name_data
 
         for blockName in self.child_blocks:
@@ -303,7 +318,10 @@ class TTBlock:
         for name in self.names[name]:
             if not include_scoped and name.has_scope():
                 continue
-            name_result = name.execute(value) or "(ERROR:%s)"%name
+            name_result = name.execute(value)
+            if not name_result:
+                name_result = name.execute(value)
+                name_result = "(ERROR:%s)"%name
             name_marker = name.get_marker()
             input_text = input_text.replace(name_marker,name_result)
 
@@ -502,7 +520,6 @@ class TTGenerator:
                     struct = current_struct[tag]
                     create_xsd_for_struct(tag,struct,xml_doc,xml_current)
 
-            a=0
             for name in names:
                 name_data = current_names[name]
                 
@@ -511,6 +528,9 @@ class TTGenerator:
                 xml_attrib = xml_doc.createElement("xs:attribute")
                 xml_attrib.setAttribute("name",name)
                 xml_attrib.setAttribute("type",name_type)
+                if name_data.required:
+                    xml_attrib.setAttribute("use","required")
+
                 # TODO: required
                 xml_complex.appendChild(xml_attrib)
 

@@ -10,13 +10,13 @@ public:
 /*endblock:field*/    
 /*block:publicSection*/ /*endblock:publicSection*/
 private:
-/*block:field*/    /*name:type|enum:int,ctype*/int/*endname*/ /*name:name*/intValue/*endname*//*name:default|enum_mod:type,string,"%s"|enum_mod:type,float,%sf|pre:=*/=0/*endname*/;
+/*block:field*/    /*name:type|required|enum:int,ctype*/int/*endname*/ /*name:name|required*/intValue/*endname*//*name:default|enum_mod:type,string,"%s"|enum_mod:type,float,%sf|pre:=*/=0/*endname*/;
 /*endblock:field*/
 /*block:rip*/    /*name:type|enum:float,ctype*/float/*endname*/ floatValue=0.0f;
     /*name:type|enum:bool,ctype*/bool/*endname*/ boalValue=true;
     /*name:type|enum:string,ctype*/const char* /*endname*/ strValue="";
 /*endblock:rip*/
-/*block:method|output:privateSection,scope==private|output:publicSection,scope==public*/    /*name:type|enum:void,ctype*/void/*endname*/ /*name:name*/voidMethod/*endname*/();
+/*block:method|output:privateSection,scope==private|output:publicSection,scope==public*/    /*name:returnType|required|enum:void,ctype*/void/*endname*/ /*name:name|required*/voidMethod/*endname*/();
 /*endblock:method*/
 /*block:privateSection*/ /*endblock:privateSection*/
 

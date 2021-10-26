@@ -2,13 +2,16 @@
 
 <root xmlns="https://dtData.com"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="https://dtData.com ../output/aa/dtData.xsd">
+xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
 
 <class name="SettlerDataComponent">
-    <field name="age" type="int"/>
-    <field name="speed" type="float"/>
-    <method name="killSettler"/>
-    <method name="marry"/>
-</class>
+    <field name="age" type="int" default="17"/>
+    <field name="speed" type="float" default="12.0"/>
+    <field type="int" name="counter"/> 
+    
+    <method returnType="void" name="killSettler"/>
+    <method returnType="bool" name="marry"/>
+    <method name="Epsilon" returnType="float" />
+</class> 
 
 </root>
