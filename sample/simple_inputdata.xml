@@ -11,7 +11,11 @@ xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
     
     <method returnType="void" name="killSettler"/>
     <method returnType="bool" name="marry"/>
-    <method name="Epsilon" returnType="float" />
+    <method name="Epsilon" returnType="float">
+        <params name="tore" type="int"/>
+        <params name="abseits" type="bool" />
+        <params name="spieler" type="string" />
+    </method> 
 </class> 
 
 </root>

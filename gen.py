@@ -94,6 +94,11 @@ class TTName:
                 if not self.ctx.runtime_mode:
                     continue
                 name = name + splits[1]
+            elif deco_id =="post_n_blast":
+                if not self.ctx.runtime_mode:
+                    continue
+                if self.ctx.current_xml_idx+1 < self.ctx.current_xml_len:
+                    name = name + splits[1]
             elif deco_id =="required":
                 if self.ctx.runtime_mode:
                     continue
@@ -311,11 +316,11 @@ class TTBlock:
     def has_name(self,name):
         return name in self.names
 
-    def execute_name(self,name,value,input_text,ctx,include_scoped=True):
-        if not self.has_name(name):
+    def execute_name(self,_name,value,input_text,ctx,include_scoped=True):
+        if not self.has_name(_name):
             return input_text
         
-        for name in self.names[name]:
+        for name in self.names[_name]:
             if not include_scoped and name.has_scope():
                 continue
             name_result = name.execute(value)
@@ -354,6 +359,8 @@ class ParseContext:
         self.xml_root=None
         self.ttg = None
         self.runtime_mode = False
+        self.current_xml_len = None
+        self.current_xml_idx = None
 
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
@@ -361,7 +368,8 @@ class ParseContext:
 
         enum = self.enums[enum_name]
         if item_name in enum and enum[item_name]!=mapping_name:
-            os.abort("enum mismatch for enum %s: item-name: %s. Wanted to set new not matching mapping! before: %s new: %s" % (enum_name,item_name,enum[item_name],mapping_name))
+            print("enum mismatch for enum %s: item-name: %s. Wanted to set new not matching mapping! before: %s new: %s" % (enum_name,item_name,enum[item_name],mapping_name))
+            os.abort()
 
         enum[item_name]=mapping_name
 
@@ -709,6 +717,9 @@ class TTGenerator:
 
             current_block.execute_decorators(True)
 
+            before_current_xml_len=self.ctx.current_xml_len
+            before_current_xml_idx=self.ctx.current_xml_idx
+            idx=0
             for xml_child in xml:
                 child_tag = strip_tag(xml_child.tag)
 
@@ -717,10 +728,20 @@ class TTGenerator:
                     calllist.append(current_block)
                     self.ctx.current_xmlscope.append(xml_child)
                     self.ctx.current_scope=calllist
+                    self.ctx.current_xml_idx=idx
+                    
+                    try:
+                        self.ctx.current_xml_len=len(xml)
+                    except:
+                        self.ctx.current_xml_len=0
                     current_result = self.executeTemplate(template,xml_child,current_result,new_blocks,calllist)
                     calllist.remove(current_block)
                     self.ctx.current_xmlscope.remove(xml_child)
-        
+                idx+=1
+
+            self.ctx.current_xml_len = before_current_xml_len
+            self.ctx.current_xml_idx = before_current_xml_idx
+
         # remove markers added by this block
         a=0
         for marker in block_markers:

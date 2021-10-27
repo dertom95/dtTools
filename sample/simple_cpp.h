@@ -16,7 +16,7 @@ private:
     /*name:type|enum:bool,ctype*/bool/*endname*/ boalValue=true;
     /*name:type|enum:string,ctype*/const char* /*endname*/ strValue="";
 /*endblock:rip*/
-/*block:method|output:privateSection,scope==private|output:publicSection,scope==public*/    /*name:returnType|required|enum:void,ctype*/void/*endname*/ /*name:name|required*/voidMethod/*endname*/();
+/*block:method|output:privateSection,scope==private|output:publicSection,scope==public*/    /*name:returnType|required|enum:void,ctype*/void/*endname*/ /*name:name|required*/voidMethod/*endname*/(/*block:params*//*name:type|required|enum:int,ctype*/int/*endname*/ /*name:name|required|post_n_blast:,*/age/*endname*//*endblock:params*/);
 /*endblock:method*/
 /*block:privateSection*/ /*endblock:privateSection*/
 
