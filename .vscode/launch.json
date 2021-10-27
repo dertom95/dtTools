@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "name": "dtGen: create schema",
             "type": "python",
@@ -44,6 +45,22 @@
             ],
             "console": "integratedTerminal"
         },
+        {
+            "name": "dtGen: generate urho-binding",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "args" : [
+                "--config-file","../gen-config.json",
+                "--xsd-schema-name","UrhoDotNet",
+                "--xsd-output","UrhoDotNet.xsd",
+                "--gen-input-file","../gen-data.xml",
+                "--gen-force-overwrite","true",
+                "--gen-root-folder","."
+            ],
+            "cwd": "/home/ttrocha/_dev/extprojects/urho.net/urho3d-dotnet/Source/Urho3D/DotNet/generated",            
+            "console": "integratedTerminal"
+        },        
         {
             "name": "dtGen: show options",
             "type": "python",

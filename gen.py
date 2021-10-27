@@ -43,7 +43,7 @@ class C:
     config = None
     delimiter_start = None
     delimiter_end = None
-    root_name = None
+    rootname = None
 
     def create_id():
         C.current_block_counter+=1
@@ -79,29 +79,81 @@ class TTName:
         return self.enum_type
 
     def apply_decorators(self,name):
+        runtime_mode = self.ctx.runtime_mode
+        store_name = None
+        store_list_name = None
+
         for decorator in self.decorators:
             splits = decorator.split(':')
             deco_id = splits[0]
 
             if deco_id == "fu":
-                if not self.ctx.runtime_mode:
+                if not runtime_mode:
                     continue
                 name = name[0].upper() + name[1:]
             elif deco_id =="pre":
-                if not self.ctx.runtime_mode:
+                if not runtime_mode:
                     continue
                 name = splits[1] + name
+            elif deco_id =="store":
+                if not runtime_mode:
+                    continue
+                store_name = splits[1]
+                self.ctx.ttg.set_scoped_value(store_name,name)                
+            elif deco_id =="lstore":
+                if not runtime_mode:
+                    continue                
+                store_list_name = splits[1]
+                self.ctx.store_to_list(store_list_name,name)                
+            elif deco_id =="lget":
+                if not runtime_mode:
+                    continue                
+                lget_splits = splits[1].split(",")
+                store_name=lget_splits[0]
+                store_list = self.ctx.get_store_list(store_name)
+                if not store_list:
+                    print("Unknown store list! %s[%s]" % (store_name,decorator))
+                    #os.abort()
+                store_delimiter = ","
+                if len(lget_splits)>1:
+                    store_delimiter=splits[1]
+                    if store_delimiter=="comma":
+                        store_delimiter=","
+                result = store_delimiter.join(store_list)
+                return result
+
+            elif deco_id =="echo":
+                if not runtime_mode:
+                    continue
+                echo_splits = splits[1].split(',')
+                echo_output = echo_splits[0]
+                vars = ()
+                for var in echo_splits[1:]:
+                    if var=="@":
+                        vars+=(name,)
+                    elif var.startswith("@"):
+                        name_scope,name_name,name_decos=get_scope_and_name(var[1:])
+                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+                        if not value:
+                            print("unknown echo variable:%s in '%s'" % (var,decorator))
+                            os.abort()
+                        vars+=(value,)
+                    else:
+                        vars+=(var,)
+                result = echo_output % vars
+                return result
+
             elif deco_id =="post":
-                if not self.ctx.runtime_mode:
+                if not runtime_mode:
                     continue
                 name = name + splits[1]
             elif deco_id =="post_n_blast":
-                if not self.ctx.runtime_mode:
+                if not runtime_mode:
                     continue
                 if self.ctx.current_xml_idx+1 < self.ctx.current_xml_len:
                     name = name + splits[1]
             elif deco_id =="required":
-                if self.ctx.runtime_mode:
+                if runtime_mode:
                     continue
                 self.required=True
             elif deco_id =="enum":
@@ -116,10 +168,10 @@ class TTName:
                     enum_item_name=info[0]
                     enum_name=info[1]
 
-                if name=="init":
+                if not runtime_mode:
+                    self.enum_type=enum_name
                     if enum_item_name:
                         self.ctx.add_enum(enum_name,enum_item_name,self.default_value)
-                        self.enum_type=enum_name
                     else:
                         # ignore add_enum for this decorator as it is just reading the enum
                         pass
@@ -139,6 +191,8 @@ class TTName:
                 print("Unsupported decorator:%s for name %s" % (decorator,self.name) )
                 #os.abort("Unsupported decorator:%s for name" % (decorator,self.name) )
         
+
+
         return name
 
     def execute(self, name):
@@ -369,6 +423,25 @@ class ParseContext:
         self.runtime_mode = False
         self.current_xml_len = None
         self.current_xml_idx = None
+        self.stored_lists = None
+
+    def store_to_list(self,list_name,value):
+        if not self.stored_lists:
+            self.stored_lists = {}
+        
+        list = self.stored_lists.get(list_name)
+        if not list:
+            self.stored_lists[list_name]=list=[]
+        
+        list.append(value)
+        return list
+        
+    def get_store_list(self,list_name):
+        if not self.stored_lists:
+            return None
+        
+        result = self.stored_lists.get(list_name)
+        return result
 
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
@@ -435,7 +508,7 @@ class TTGenerator:
 
         C.delimiter_start=re.escape(C.config[C.CONFIG_COMMENT_START])
         C.delimiter_end=re.escape(C.config[C.CONFIG_COMMENT_END])
-        C.root_name=C.config[C.CONFIG_ROOT_NAME] or "root"
+        C.rootname=C.config[C.CONFIG_ROOT_NAME] or "root"
 
         self.token_block_begin_any = "%s(B|block):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
         self.token_block_end_any = "%s(EB|endblock):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
@@ -567,7 +640,7 @@ class TTGenerator:
         return xsd_result
 
     def parseTemplate(self,ctx,lines):
-        root_block=TTBlock("root",lines,lines,ctx)
+        root_block=TTBlock(C.rootname,lines,lines,ctx)
         allblocks=[root_block]
         allblocks=self.parseBlocks(root_block,lines,allblocks)
 
@@ -592,8 +665,8 @@ class TTGenerator:
             result = self.re_find_full_block(block_name,lines)
 
             if not result:
-                print("NO RESULT!?")
-                return
+                print("Could not find ENDBLOCK for %s" %block_name)
+                return allblocks
 
             all = result.group(0)
             innertext = result.group(2)
@@ -629,7 +702,7 @@ class TTGenerator:
 
         
         tag = strip_tag(root.tag)
-        if tag==C.root_name:
+        if tag==C.rootname:
             for template in C.config[C.CONFIG_TEMPLATES]:
                 template_result = self.executeTemplate(template["template"],root)
                 template_result = re.sub("\|<#.*?#>\|","",template_result)
@@ -682,6 +755,13 @@ class TTGenerator:
         else:
             os.abort("Unknown scoped value  [%s.]%s" % (scope,key))
 
+    def set_scoped_value(self,key,value):
+        scope,name,deco = get_scope_and_name(key)
+        if not scope:
+            self.ctx.xml_current.set(name,value)
+        else:
+            a=0
+
     def executeTemplate(self,template,xml,current_result=None,current_blocks=None,calllist=None):
         current_tag = strip_tag(xml.tag)
 
@@ -707,7 +787,7 @@ class TTGenerator:
                     
 
             # try to fill in names
-            for attrib_key in xml.attrib:
+            for attrib_key in xml.attrib.copy():
                 attrib_value=xml.attrib[attrib_key]
                 # replace name-markers with the attrib value
                 current_result = current_block.execute_name(attrib_key,attrib_value,current_result,self.ctx,False)
@@ -813,7 +893,7 @@ if hasattr(args,"xsd_output"):
 
 
 
-if hasattr(args,"gen_input_file"):
+if hasattr(args,"gen_input_file") and args.gen_input_file!=None and args.gen_input_file!="":
     # "/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml"
     generation_root = os.path.abspath(args.gen_root_folder)
     try:
