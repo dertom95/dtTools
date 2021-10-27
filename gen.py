@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 generation_root=None
+option_force_overwrite=False
 
 def get_scope_and_name(name_data):
     name_name=None
@@ -179,6 +180,7 @@ class TTBlock:
         self.names = {}
         self.outputs = []
         self.filename=None
+        self.file_overwrite=False
 
         self.execute_decorators()
         
@@ -230,6 +232,11 @@ class TTBlock:
             if deco_id=="output":
                 output=TTOutput(splits[1])
                 self.outputs.append(output)
+            elif deco_id=="overwrite":
+                if runtime:
+                    continue
+                self.file_overwrite=True
+
             elif deco_id=="file":
                 if not runtime:
                     continue
@@ -748,11 +755,13 @@ class TTGenerator:
             current_result=current_result.replace(marker,"")
 
         if current_block.filename:
-            # save this block as dedicated file and do not include to result
             current_result = current_result.replace(block_marker,"")
-            f = open("%s/%s" %(generation_root,current_block.filename),"w")
-            f.write(current_result)
-            f.close()
+            output_filename = "%s/%s" %(generation_root,current_block.filename)
+            if current_block.file_overwrite or option_force_overwrite or not os.path.isfile(output_filename):
+                # save this block as dedicated file and do not include to result
+                f = open(output_filename,"w")
+                f.write(current_result)
+                f.close()
             return block_marker
         else:
             return current_result
@@ -769,12 +778,17 @@ parser.add_argument('--gen-input-file', type=str,
 parser.add_argument('--gen-root-folder', type=str, default="./generated",
                     help='output root path for generated files')
 
+parser.add_argument('--gen-force-overwrite', type=bool,default=False,help="[WARNING] force generation of files that usually would not overwrite existing files")
+
 parser.add_argument('--xsd-schema-name', type=str, default="dtGen",
                     help='name of the schema')
 parser.add_argument('--xsd-output', type=str, 
                     help='path to xsd output-file')                   
 
 args = parser.parse_args()
+
+
+option_force_overwrite = args.gen_force_overwrite
 
 gen = TTGenerator(args.config_file)
 gen.parseTemplates()
@@ -794,6 +808,8 @@ if hasattr(args,"xsd_output"):
     f.truncate()
     f.close()
     did_action=True
+
+
 
 if hasattr(args,"gen_input_file"):
     # "/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml"
