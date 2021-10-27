@@ -187,6 +187,7 @@ class TTBlock:
 
     def merge_block(self,current_struct,scope_dict,layer=0):
         result = '\t'*layer+self.block_name+'\n'
+#        result = '\t'*layer+self.block_name
 
         work_struct=current_struct.get(self.block_name)
         if not work_struct:
@@ -695,7 +696,8 @@ class TTGenerator:
         # inject block data into 'current_result' but add the blockmarker again at the end for multiple block usage
         for current_block in current_blocks:
             block_marker = current_block.get_marker(xml)
-            current_result = current_result.replace(block_marker,current_block.inner_lines+"\n"+block_marker) 
+#            current_result = current_result.replace(block_marker,current_block.inner_lines+"\n"+block_marker) 
+            current_result = current_result.replace(block_marker,current_block.inner_lines+block_marker) 
 
             inner_markers = re.findall( "\|<#.*?#>\|",current_block.inner_lines,re.MULTILINE | re.DOTALL)
             if inner_markers:
