@@ -5,7 +5,9 @@
 {}
 
 /*block:method*//*name:returnType|enum:ctype*/void/*endname*/ /*name:class.name*/Test/*endname*/::/*name:name*/voidMethod/*endname*/(/*block:params*//*name:type|required|enum:int,ctype*/int/*endname*/ /*name:name|required|post_n_blast:,*/age/*endname*//*endblock:params*/) 
-{}
+{
+    /*name:name*/voidMethod/*endname*/(/*block:params*//*name:name|post_n_blast:,*/age/*endname*//*endblock:params*/);
+}
 /*endblock:method*/
 
 /*endblock:class*/

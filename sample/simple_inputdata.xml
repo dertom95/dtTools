@@ -18,4 +18,10 @@ xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
     </method> 
 </class> 
 
+<class name="SettlerRuntimeComponent">
+    <field type="int" name="counter"/> 
+    
+    <method returnType="void" name="killSettler"/>
+</class> 
+
 </root>

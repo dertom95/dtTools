@@ -107,21 +107,19 @@ class TTName:
                 self.ctx.store_to_list(store_list_name,name)                
             elif deco_id =="lget":
                 if not runtime_mode:
-                    continue                
+                    continue
                 lget_splits = splits[1].split(",")
                 store_name=lget_splits[0]
                 store_list = self.ctx.get_store_list(store_name)
                 if not store_list:
                     print("Unknown store list! %s[%s]" % (store_name,decorator))
-                    #os.abort()
+                    os.abort()
                 store_delimiter = ","
                 if len(lget_splits)>1:
-                    store_delimiter=splits[1]
+                    store_delimiter=lget_splits[1]
                     if store_delimiter=="comma":
                         store_delimiter=","
-                result = store_delimiter.join(store_list)
-                return result
-
+                name = store_delimiter.join(store_list)
             elif deco_id =="echo":
                 if not runtime_mode:
                     continue
@@ -135,13 +133,12 @@ class TTName:
                         name_scope,name_name,name_decos=get_scope_and_name(var[1:])
                         value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
                         if not value:
-                            print("unknown echo variable:%s in '%s'" % (var,decorator))
+                            print("ABORT: unknown echo variable:%s in '%s'" % (var,decorator))
                             os.abort()
                         vars+=(value,)
                     else:
                         vars+=(var,)
-                result = echo_output % vars
-                return result
+                name = echo_output % vars
 
             elif deco_id =="post":
                 if not runtime_mode:
@@ -806,6 +803,7 @@ class TTGenerator:
 
             current_block.execute_decorators(True)
 
+            # block-process
             before_current_xml_len=self.ctx.current_xml_len
             before_current_xml_idx=self.ctx.current_xml_idx
             idx=0
