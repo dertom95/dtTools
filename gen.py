@@ -236,9 +236,10 @@ class TTBlock:
 
         self.execute_decorators()
 
-    def check_conditions(self):
-        for condition in self.conditions:
-            if not condition():
+    def check_conditions(self,check_context):
+        for condition_check in self.conditions:
+            result = condition_check(check_context)
+            if not result:
                 return False
         return True
 
@@ -308,24 +309,62 @@ class TTBlock:
                     vars+=(value,)
 
                 self.filename = filenameString % vars
-            elif deco_id=="ifset":
+            elif deco_id=="else":
                 if not runtime:
-                    set_var = splits[1]
-                    block = self
-                    def check():
-                        name_scope,name_name,name_decos=get_scope_and_name(set_var)
-                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name)                
-                        return value is not None
-
+                    def check(check_context):
+                        ifblock=-1
+                        try:
+                            ifblock = int(splits[1])
+                            if check_context["ifblocks"][ifblock]==True:
+                                # this block is already resolved
+                                return False
+                        except:
+                            if ifblock!=-1:
+                                check_context["ifblocks"][ifblock]=True
+                            return True
                     self.conditions.append(check)
-            elif deco_id=="ifnset":
+                                                            
+            elif deco_id=="ifnset" or deco_id=="ifset":
+                is_equalcheck = deco_id=="ifset"
                 if not runtime:
-                    set_var = splits[1]
-                    block = self
-                    def check():
-                        name_scope,name_name,name_decos=get_scope_and_name(set_var)
-                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
-                        return value is None
+                    vals = splits[1].split(',')
+                    varname = None
+                    ifblock = -1
+                    varvalue = None
+                    if len(vals)==1:
+                        varname=vals[0]
+                    elif len(vals)==2:
+                        varname=vals[0]
+                        varvalue=vals[1]
+                    elif len(vals)==3:
+                        varname=vals[1]
+                        varvalue=vals[2]
+                        ifblock=int(vals[0])
+
+                    def check(check_context):
+                        try:
+                            if check_context["ifblocks"][ifblock]==True:
+                                # this if block is already resolved
+                                return False
+                        except:
+                            # this block seems to be not resolved,yet
+                            pass
+
+                        name_scope,name_name,name_decos=get_scope_and_name(varname)
+                        value = self.ctx.ttg.get_scoped_value(check_context["xml_current"],name_name)
+                        
+                        result = None
+                        if is_equalcheck:
+                            result = (varvalue is None and value is not None) or (varvalue and value==varvalue)
+                        else:
+                            result = (varvalue is None and value is None) or (varvalue and value!=varvalue)
+                        
+                        if result and ifblock!=-1:
+                            # tell the check-context that this ifblock is resolved and upcoming checks should result in false
+                            check_context["ifblocks"][ifblock]=True
+
+                        return result
+
                                         
                     self.conditions.append(check)
 
@@ -742,6 +781,9 @@ class TTGenerator:
         if not scope_signature:
             return self.ctx.xml_current
 
+        if type(scope_signature)==ET.Element:
+            return scope_signature    
+
         block_splits = scope_signature.split('.')
         block_splits.reverse()
         
@@ -771,7 +813,7 @@ class TTGenerator:
     def get_scoped_value(self,scope,key):
         if not key:
             scope_splits = scope.split('.')
-            
+        
         scope_xml = self.find_xml_for_scope(scope)
         if scope_xml is not None:
             try:
@@ -801,11 +843,17 @@ class TTGenerator:
             self.ctx.current_xmlscope=[xml]
 
         # inject block data into 'current_result' but add the blockmarker again at the end for multiple block usage
+        block_check_context={
+            "blocks":current_blocks,
+            "xml_current":self.ctx.xml_current,
+            "context" : self.ctx,
+            "ifblocks" : {}
+        }
         for current_block in current_blocks:
             block_marker = current_block.get_marker(xml)
 #            current_result = current_result.replace(block_marker,current_block.inner_lines+"\n"+block_marker) 
-            
-            check_conditions = current_block.check_conditions()
+            block_check_context["current_block"]=current_block
+            check_conditions = current_block.check_conditions(block_check_context)
             if not check_conditions:
                 # ignore block due to not all conditions are true
                 continue

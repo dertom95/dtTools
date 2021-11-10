@@ -46,7 +46,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "dtGen: generate urho-binding",
+            "name": "dtGen: generate urho-binding(test)",
             "type": "python",
             "request": "launch",
             "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
@@ -60,6 +60,23 @@
                 "--verbose","true"
             ],
             //"cwd": "/home/ttrocha/_dev/extprojects/urho.net/urho3d-dotnet/Source/Urho3D/DotNet/generated",            
+            "console": "integratedTerminal"
+        },        
+        {
+            "name": "dtGen: generate urho-binding(inplace)",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "args" : [
+                "--config-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/urho.net/urho3d-config.json",
+                "--xsd-schema-name","UrhoDotNet",
+                "--xsd-output","DefaultComponents/generated/UrhoDotNet.xsd",
+                "--gen-input-file","DefaultComponents/binding-gen.xml",
+                "--gen-force-overwrite","true",
+                "--gen-root-folder","DefaultComponents/generated",
+                "--verbose","true"
+            ],
+            "cwd": "/home/ttrocha/_dev/extprojects/urho.net/urho3d-dotnet/Source/Urho3D",            
             "console": "integratedTerminal"
         },        
         {
