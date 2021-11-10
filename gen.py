@@ -230,11 +230,17 @@ class TTBlock:
         self.block_id = C.create_id()
         self.names = {}
         self.outputs = []
+        self.conditions = [] # a set of conditions that are required to be true for the block to be shown
         self.filename=None
         self.file_overwrite=False
 
         self.execute_decorators()
-        
+
+    def check_conditions(self):
+        for condition in self.conditions:
+            if not condition():
+                return False
+        return True
 
     def merge_block(self,current_struct,scope_dict,layer=0):
         result = '\t'*layer+self.block_name+'\n'
@@ -279,7 +285,7 @@ class TTBlock:
     def execute_decorators(self,runtime=None):
         for decorator in self.decorators:
             splits=decorator.split(":")
-            deco_id=splits[0]
+            deco_id=splits[0].lower()
 
             if deco_id=="output":
                 output=TTOutput(splits[1])
@@ -302,8 +308,27 @@ class TTBlock:
                     vars+=(value,)
 
                 self.filename = filenameString % vars
+            elif deco_id=="ifset":
+                if not runtime:
+                    set_var = splits[1]
+                    block = self
+                    def check():
+                        name_scope,name_name,name_decos=get_scope_and_name(set_var)
+                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name)                
+                        return value is not None
 
-                
+                    self.conditions.append(check)
+            elif deco_id=="ifnset":
+                if not runtime:
+                    set_var = splits[1]
+                    block = self
+                    def check():
+                        name_scope,name_name,name_decos=get_scope_and_name(set_var)
+                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+                        return value is None
+                                        
+                    self.conditions.append(check)
+
 
     def add_block(self,block):
         if block.block_name not in self.child_blocks:
@@ -491,9 +516,14 @@ class TTGenerator:
         self.current_template = None
         self.ctx = None
 
-        C.config = json.load(open(C.config_file_path))
+        try:
+            C.config = json.load(open(C.config_file_path))
+        except:
+            print("Could not find configuration-file:%s" % (C.config_file_path))
+            os.abort()
+
         self.create_default_configs()
-        self.parseTemplates()
+#        self.parseTemplates()
         
     def check_default(self,json,key,defaultvalue):
         if key not in json:
@@ -750,7 +780,7 @@ class TTGenerator:
             except:
                 return None
         else:
-            os.abort("Unknown scoped value  [%s.]%s" % (scope,key))
+            os.abort("Unknown scope in scoped value  [%s.]%s" % (scope,key))
 
     def set_scoped_value(self,key,value):
         scope,name,deco = get_scope_and_name(key)
@@ -774,6 +804,12 @@ class TTGenerator:
         for current_block in current_blocks:
             block_marker = current_block.get_marker(xml)
 #            current_result = current_result.replace(block_marker,current_block.inner_lines+"\n"+block_marker) 
+            
+            check_conditions = current_block.check_conditions()
+            if not check_conditions:
+                # ignore block due to not all conditions are true
+                continue
+
             current_result = current_result.replace(block_marker,current_block.inner_lines+block_marker) 
 
             inner_markers = re.findall( "\|<#.*?#>\|",current_block.inner_lines,re.MULTILINE | re.DOTALL)
@@ -860,6 +896,8 @@ parser.add_argument('--gen-root-folder', type=str, default="./generated",
 
 parser.add_argument('--gen-force-overwrite', type=bool,default=False,help="[WARNING] force generation of files that usually would not overwrite existing files")
 
+parser.add_argument('--verbose', type=bool,default=False,help="verbose mode")
+
 parser.add_argument('--xsd-schema-name', type=str, default="dtGen",
                     help='name of the schema')
 parser.add_argument('--xsd-output', type=str, 
@@ -869,6 +907,10 @@ args = parser.parse_args()
 
 
 option_force_overwrite = args.gen_force_overwrite
+verbose = args.verbose
+
+if verbose:
+    print("working-directory: %s" % (os.getcwd()))
 
 gen = TTGenerator(args.config_file)
 gen.parseTemplates()
