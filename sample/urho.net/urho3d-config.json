@@ -1,0 +1,9 @@
+{
+    "rootname": "root",
+    "templates": [
+        {
+            "name": "cpp-gluecode",
+            "path": "binding.cpp"
+        }
+    ]
+}

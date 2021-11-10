@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<root xmlns="https://UrhoDotNet.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://UrhoDotNet.com UrhoDotNet.xsd">
+    <main>
+        <class name="SoundStream">
+            <method name="Seek" returnType="int">
+                <params name="sample_number" type="uint" />
+            </method>
+
+            <method name="GetData" returnType="uint">
+                <params name="dest" type="scharPtr" />
+                <params name="numBytes" type="uint" />
+            </method>
+            <method name="SetFormat">
+                <params name="frequency" type="uint" />
+                <params name="sixteenBit" type="bool" />
+                <params name="stereo" type="bool" />
+            </method>
+            <method name="SetStopAtEnd">
+                <params name="enable" type="bool" />
+            </method>
+            <method name="GetSampleSize" returnType="uint">
+            </method>
+        </class>
+
+        <class name="Mixi">
+            <method name="KickIt2">
+                <params name="hard2" type="bool" />
+            </method>
+
+            <method name="Execute2">
+                <params name="filename2" type="string" />
+                <params name="handle" type="int" />
+            </method>
+        </class>
+    </main>
+
+</root>
