@@ -5,7 +5,7 @@
 			<xs:enumeration value="bool"/>
 			<xs:enumeration value="float"/>
 			<xs:enumeration value="int"/>
-			<xs:enumeration value="scharPtr"/>
+			<xs:enumeration value="s_char_ptr"/>
 			<xs:enumeration value="short"/>
 			<xs:enumeration value="string"/>
 			<xs:enumeration value="uint"/>
@@ -38,12 +38,11 @@
 												</xs:choice>
 												<xs:attribute name="name" type="xs:string" use="required"/>
 												<xs:attribute name="returnType" type="ctype"/>
+												<xs:attribute name="wrap" type="xs:string"/>
 											</xs:complexType>
 										</xs:element>
 										<xs:element name="rip">
-											<xs:complexType>
-												<xs:attribute name="name" type="xs:string"/>
-											</xs:complexType>
+											<xs:complexType/>
 										</xs:element>
 									</xs:choice>
 									<xs:attribute name="name" type="xs:string" use="required"/>
@@ -51,6 +50,7 @@
 							</xs:element>
 							<xs:element name="rip">
 								<xs:complexType>
+									<xs:attribute name="map" type="xs:string"/>
 									<xs:attribute name="type" type="ctype"/>
 								</xs:complexType>
 							</xs:element>

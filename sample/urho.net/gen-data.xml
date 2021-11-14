@@ -2,13 +2,13 @@
 
 <root xmlns="https://UrhoDotNet.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://UrhoDotNet.com UrhoDotNet.xsd">
     <main>
-        <class name="SoundStream">
+        <!-- <class name="SoundStream">
             <method name="Seek" returnType="int">
                 <params name="sample_number" type="uint" />
             </method>
 
             <method name="GetData" returnType="uint">
-                <params name="dest" type="scharPtr" />
+                <params name="dest" type="s_char_ptr" />
                 <params name="numBytes" type="uint" />
             </method>
             <method name="SetFormat">
@@ -21,14 +21,14 @@
             </method>
             <method name="GetSampleSize" returnType="uint">
             </method>
-        </class>
+        </class> -->
 
         <class name="Mixi">
             <method name="KickIt2">
                 <params name="hard2" type="bool" />
             </method>
 
-            <method name="Execute2">
+            <method name="Execute2" returnType="string">
                 <params name="filename2" type="string" />
                 <params name="handle" type="int" />
             </method>

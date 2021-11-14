@@ -68,6 +68,8 @@ class TTName:
         # fake apply for global decorators (enum)
         self.apply_decorators("init")
         # todo: decorators
+    def has_decorator(self,deco_id):
+        return deco_id in self.decorators        
 
     def get_marker(self):
         return "|<#%s#>|" % self.name_id
@@ -84,9 +86,12 @@ class TTName:
         store_list_name = None
 
         for decorator in self.decorators:
-            splits = decorator.split(':')
-            deco_id = splits[0]
+            splits = decorator.split(':',1)
+            deco_id = splits[0].lower()
 
+            if deco_id == "auto":
+                # is handled somewhere else
+                continue
             if deco_id == "fu":
                 if not runtime_mode:
                     continue
@@ -139,7 +144,6 @@ class TTName:
                     else:
                         vars+=(var,)
                 name = echo_output % vars
-
             elif deco_id =="post":
                 if not runtime_mode:
                     continue
@@ -174,16 +178,105 @@ class TTName:
                         pass
                 else:
                     name = self.ctx.get_enum(enum_name,name)
-            elif deco_id=="enum_mod":
-                if not self.ctx.runtime_mode:
+            elif deco_id == "map":
+                if runtime_mode:
+                    continue
+                mapname,varkey = splits[1].split(",")
+                self.ctx.add_map_value(mapname,varkey,self.default_value)
+            elif deco_id == "getmap":
+                if not runtime_mode:
                     continue
 
-                enum_tag,enum_type,pattern=splits[1].split(",")
-                name_scope,name_name,name_decos = get_scope_and_name(enum_tag)
-                value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
-                if value==enum_type:
-                    name = pattern % (name,)
+                info = splits[1].split(",")
+                mapname = info[0]
+                var = info[1]
+                default = self.default_value
+                if len(info)>2:
+                    default=info[2]
+
+                var = self.ctx.resolve_var(var,name,default)
+                
+                # if var=="@":
+                #     var=name
+                # elif var.startswith("@"):
+                #     name_scope,name_name,name_decos=get_scope_and_name(var[1:])
+                #     value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+                #     if not value:
+                #         print("ABORT: unknown echo variable:%s in '%s'" % (var,decorator))
+                #         os.abort()
+                #     var=value
+
+                name = self.ctx.get_map_value(mapname,var,default)
+            elif deco_id == "if":
+                if not runtime_mode:
                     continue
+                infos = splits[1].split(",")
+                condition = infos[0]
+                if_true = None
+                if_false = None
+                if len(infos)>1:
+                    if_true=infos[1]
+                    if if_true=="@default":
+                        if_true=self.default_value
+                if len(infos)>2:
+                    if_false=infos[2]
+                    if if_false=="@default":
+                        if_false=self.default_value
+                
+                while (True):
+                    res=re.match("(\\@[a-zA-Z_]+)",condition)
+                    if not res:
+                        break
+                    var = res.group(1)
+                    if var=="@default":
+                        if_false=self.default_value
+                    varResult = self.ctx.resolve_var(var,'NONE','NONE_DEF')
+                    
+                    try:
+                        number=int(varResult)
+                        condition=condition.replace(var,"%s"%varResult)
+                    except:
+                        condition=condition.replace(var,"'%s'"%varResult)
+
+                condResult = eval(condition)
+
+                if condResult:
+                    name = if_true
+                else:
+                    name = if_false
+
+            
+
+            # TODO: implement this:
+            # elif deco_id=="ifnset" or deco_id=="ifset":
+            #     is_equalcheck = deco_id=="ifset"
+            #     if not runtime:
+            #         continue
+            #     vals = splits[1].split(',')
+            #     varname = None
+            #     ifblock = -1
+            #     varvalue = None
+            #     if len(vals)==1:
+            #         varname=vals[0]
+            #     elif len(vals)==2:
+            #         varname=vals[0]
+            #         varvalue=vals[1]
+            #     elif len(vals)==3:
+            #         varname=vals[1]
+            #         varvalue=vals[2]
+            #         ifblock=int(vals[0])
+
+            # WHAT WAS THIS MEANT FOR?                                    
+            # elif deco_id=="enum_mod":
+            #     if not self.ctx.runtime_mode:
+            #         continue
+
+            #     enum_tag,enum_type,pattern=splits[1].split(",")
+            #     name_scope,name_name,name_decos = get_scope_and_name(enum_tag)
+            #     value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+            #     if value==enum_type:
+            #         name = pattern % (name,)
+            #         continue
             else:
                 print("Unsupported decorator:%s for name %s" % (decorator,self.name) )
                 #os.abort("Unsupported decorator:%s for name" % (decorator,self.name) )
@@ -447,7 +540,7 @@ class TTBlock:
             if not include_scoped and name.has_scope():
                 continue
             name_result = name.execute(value)
-            if not name_result:
+            if name_result is None:
                 name_result = name.execute(value)
                 name_result = "(ERROR:%s)"%name
             name_marker = name.get_marker()
@@ -477,6 +570,7 @@ class ParseContext:
         self.current_scope=None
         self.current_xmlscope=None
         self.enums={}
+        self.maps={}
         self.templates={}
         self.xml_current=None
         self.xml_root=None
@@ -504,6 +598,20 @@ class ParseContext:
         result = self.stored_lists.get(list_name)
         return result
 
+    def add_map_value(self,mapname,varkey,value):
+        map = self.maps.get(mapname)
+        if not map:
+            map = self.maps[mapname] = {}
+        map[varkey]=value
+
+    def get_map_value(self, mapname, varkey,default):
+        try:
+            return self.maps[mapname][varkey]
+        except:
+            if verbose:
+                print("Unknown map-lookup: %s:%s" % (mapname,varkey))
+            return default
+
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
             self.enums[enum_name]={}
@@ -523,6 +631,18 @@ class ParseContext:
             return None
         
         return enum[item_name]    
+
+    def resolve_var(self,var,current,default):
+        if var=="@":
+            return current
+        elif var.startswith("@"):
+            name_scope,name_name,name_decos=get_scope_and_name(var[1:])
+            value = self.ttg.get_scoped_value(name_scope,name_name)
+            if value is not None:
+                return value
+
+        return default
+
 
     # def find_block_in_scope(self,blockname):
     #     block_splits = blockname.split('.')
@@ -868,7 +988,8 @@ class TTGenerator:
                     
 
             # try to fill in names
-            for attrib_key in xml.attrib.copy():
+            execute_names = xml.attrib.copy()
+            for attrib_key in execute_names:
                 attrib_value=xml.attrib[attrib_key]
                 # replace name-markers with the attrib value
                 current_result = current_block.execute_name(attrib_key,attrib_value,current_result,self.ctx,False)
@@ -877,6 +998,7 @@ class TTGenerator:
             for stName in current_block.names:
                 names = current_block.names[stName]
                 for name in names:
+                    # scoped names
                     if name.has_scope():
                         value = self.get_scoped_value(name.scope,name.name)
                         scope_result = ""
@@ -884,6 +1006,10 @@ class TTGenerator:
                         if value is not None:
                             scope_result = name.execute(value)
                         current_result = current_result.replace(name.get_marker(),scope_result)
+                    # auto-names
+                    if name not in execute_names and name.has_decorator("auto"):
+                        current_result = current_block.execute_name(name.name,"",current_result,self.ctx,False)
+
 
             current_block.execute_decorators(True)
 

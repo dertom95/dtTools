@@ -14,7 +14,15 @@ extern "C" {
 /*name:type|enum:void,ctype*/void/*endname*/* voidValue;
 /*name:type|enum:uint,ctype*/unsigned int/*endname*/ uintValue;
 /*name:type|enum:s_char_ptr,ctype*/signed char * /*endname*/ s_charPtrValue;
+
+DllExport const char *
+UrhoObject_GetCategory (Urho3D::Object *_target)
+{
+	return /*name:map|map:returntypePre,string*/stringdup((/*endname*/_target->GetCategory ()/*name:map|map:returntypePost,string*/).CString ())/*endname*/;
+}
 /*endblock:rip*/
+
+
 
 /*block:class*/
 DllExport int
@@ -52,25 +60,16 @@ DllExport void *
 }
 
 
-/*block:method|ifset:returnType*/DllExport /*name:returnType|enum:int,ctype*/int/*endname*/
+/*block:method*/DllExport /*name:returnType|enum:int,ctype*/int/*endname*/
 /*name:name|required|echo:%s_%s,@class.name,@*/Audio_SetMode/*endname*/ (/*name:class.name*/Audio/*endname*/ *_target/*block:params*//*name:type|enum:ctype|required|pre:,*/int/*endname*/ /*name:name|required*/bufferLengthMSec/*endname*//*endblock:params*//*block:rip*/, int mixRate, /*name:rip|enum:bool,ctype*/bool/*endname*/ stereo, bool interpolation/*endblock:rip*/)
 {
-	return _target->/*name:name*/SetMode/*endname*/(
-		/*block:params|ifset:0,type,string*/ Urho3D::String(/*name:name|post_n_blast:,*/bufferLengthMSec, mixRate, stereo, interpolation/*endname*/ )/*endblock:params*/
+	/*name:if|auto|if:@returnType!='void',@default,*/return/*endname*/ /*name:wrap|auto|getmap:returntypePre,@returnType*//*endname*/_target->/*name:name*/SetMode/*endname*/(
+		/*block:params|ifset:0,type,string*/ /*name:name|echo:Urho3D::String(%s),@|post_n_blast:,*/Urho3D::String(bufferLengthMSec), mixRate, stereo, interpolation/*endname*/ /*endblock:params*/
 		/*block:params|else:0*/ /*name:name|post_n_blast:,*/bufferLengthMSec, mixRate, stereo, interpolation/*endname*/ /*endblock:params*/
+		/*name:wrap|auto|getmap:returntypePost,@returnType*//*endname*/		
 	);
+	// 1st
 }
-/*endblock:method*/
-
-/*block:method|ifNset:returnType*/DllExport void
-/*name:name|echo:%s_%s,@class.name,@*/Audio_Update/*endname*/ (/*name:class.name*/Audio/*endname*/ *_target,/*block:params*//*name:type|enum:ctype|required*/float/*endname*/ /*name:name|required|post_n_blast:,*/dt/*endname*//*endblock:params*/)
-{
-	_target->/*name:name*/Update/*endname*/(/*block:params*//*name:name|post_n_blast:,*/bufferLengthMSec, mixRate, stereo, interpolation/*endname*//*endblock:params*/);
-}
-/*endblock:method*/
-
-/*block:method*/
-
 /*endblock:method*/
 
 /*block:rip*/
@@ -229,7 +228,6 @@ Audio_MixOutput (Urho3D::Audio *_target, void * dest, unsigned int samples)
 }
 /*endblock:rip*/
 /*endblock:class*/
-/*block:rip*/
 
 
 }
