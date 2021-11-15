@@ -1008,7 +1008,7 @@ class TTGenerator:
                         current_result = current_result.replace(name.get_marker(),scope_result)
                     # auto-names
                     if name not in execute_names and name.has_decorator("auto"):
-                        current_result = current_block.execute_name(name.name,"",current_result,self.ctx,False)
+                        current_result = current_block.execute_name(name.name,name.default_value,current_result,self.ctx,False)
 
 
             current_block.execute_decorators(True)
