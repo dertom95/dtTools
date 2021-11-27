@@ -177,7 +177,20 @@ class TTName:
                         # ignore add_enum for this decorator as it is just reading the enum
                         pass
                 else:
-                    name = self.ctx.get_enum(enum_name,name)
+                    value = self.ctx.get_enum_item(enum_name,name)
+                    if value: 
+                        name = self.ctx.get_enum_item(enum_name,name)
+                    else:
+                        if not self.ctx.is_enum_strict(enum_name):
+                            return name
+                        else:
+                            print ("Unknown enum-item:%s" % name)
+                            return "UNKNOWN"
+            elif deco_id =="enum_strict":
+                enum_name=splits[1]
+
+                if not runtime_mode:
+                    self.ctx.set_enum_strict(enum_name)
             elif deco_id == "map":
                 if runtime_mode:
                     continue
@@ -266,17 +279,19 @@ class TTName:
             #         varvalue=vals[2]
             #         ifblock=int(vals[0])
 
-            # WHAT WAS THIS MEANT FOR?                                    
-            # elif deco_id=="enum_mod":
-            #     if not self.ctx.runtime_mode:
-            #         continue
+            elif deco_id=="enum_mod":
+            # e.g. for default modification:
+            # enum_mod:type,float,%sf    <--append f
+            # enum_mod:type,string,"%s"  <--wrap in dquotes
+                if not self.ctx.runtime_mode:
+                    continue
 
-            #     enum_tag,enum_type,pattern=splits[1].split(",")
-            #     name_scope,name_name,name_decos = get_scope_and_name(enum_tag)
-            #     value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
-            #     if value==enum_type:
-            #         name = pattern % (name,)
-            #         continue
+                enum_tag,enum_type,pattern=splits[1].split(",")
+                name_scope,name_name,name_decos = get_scope_and_name(enum_tag)
+                value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+                if value==enum_type:
+                    name = pattern % (name,)
+                    continue
             else:
                 print("Unsupported decorator:%s for name %s" % (decorator,self.name) )
                 #os.abort("Unsupported decorator:%s for name" % (decorator,self.name) )
@@ -570,6 +585,7 @@ class ParseContext:
         self.current_scope=None
         self.current_xmlscope=None
         self.enums={}
+        self.strict_enums={}
         self.maps={}
         self.templates={}
         self.xml_current=None
@@ -623,11 +639,23 @@ class ParseContext:
 
         enum[item_name]=mapping_name
 
-    def get_enum(self,enum_name,item_name):
+    def set_enum_strict(self,enum_name):
+        if enum_name not in self.strict_enums:
+            self.strict_enums[enum_name]=True
+    
+    def is_enum_strict(self,enum_name):
+        return enum_name in self.strict_enums
+
+    def get_enum(self,enum_name):
         if not enum_name in self.enums:
             return None
         enum = self.enums[enum_name]
-        if not item_name in enum:
+        return enum
+
+    def get_enum_item(self,enum_name,item_name):
+        enum = self.get_enum(enum_name)
+
+        if not enum or not item_name in enum:
             return None
         
         return enum[item_name]    
@@ -749,15 +777,46 @@ class TTGenerator:
         xml_root.setAttribute('elementFormDefault',"qualified")
         xml_doc.appendChild(xml_root)
 
-        def create_enum_type(xml_doc,xml_root,name,enum_values):
+        def create_enum_type(xml_doc,xml_root,name,enum_values,strict=False):
+		# <xs:union>
+		# 	<xs:simpleType>
+		# 		<xs:restriction base="xs:string">
+		# 			<xs:enumeration value="float"/>
+		# 			<xs:enumeration value="int"/>
+		# 			<xs:enumeration value="string"/>
+		# 		</xs:restriction>
+		# 	</xs:simpleType>
+		# 	<xs:simpleType>
+		# 		<xs:restriction base="xs:string">
+		# 		</xs:restriction>
+		# 	</xs:simpleType>
+		# </xs:union>
+            
             enum_type = xml_doc.createElement("xs:simpleType")
             enum_type.setAttribute('name',name)
             enum_type.setAttribute('final','restriction') # what is this for?
             xml_root.appendChild(enum_type)
 
+            current_elem = enum_type
+
+            if not strict:
+                union = xml_doc.createElement("xs:union")
+                string_type = xml_doc.createElement("xs:simpleType")
+
+                enum_restriction = xml_doc.createElement("xs:restriction")
+                enum_restriction.setAttribute("base","xs:string")
+                string_type.appendChild(enum_restriction)
+                union.appendChild(string_type)
+
+                enum_inner_type = xml_doc.createElement("xs:simpleType")
+                union.appendChild(enum_inner_type)
+                
+                current_elem = enum_inner_type
+                enum_type.appendChild(union)
+
             enum_restriction = xml_doc.createElement("xs:restriction")
             enum_restriction.setAttribute("base","xs:string")
-            enum_type.appendChild(enum_restriction)
+            current_elem.appendChild(enum_restriction)
 
             for value in enum_values:
                 enum_value = xml_doc.createElement("xs:enumeration")
@@ -813,7 +872,7 @@ class TTGenerator:
         for enum_name in self.ctx.enums:
             enum = self.ctx.enums[enum_name]
             sorted_keys = sorted(enum.keys())
-            create_enum_type(xml_doc,xml_root,enum_name,sorted_keys)
+            create_enum_type(xml_doc,xml_root,enum_name,sorted_keys,self.ctx.is_enum_strict(enum_name))
 
         #iterate of structs
         for struct_name in sorted(data_struct.keys()):
