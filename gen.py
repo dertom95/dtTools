@@ -134,6 +134,8 @@ class TTName:
                 for var in echo_splits[1:]:
                     if var=="@":
                         vars+=(name,)
+                    elif var=="@current":
+                        vars+=(self.default_value,)
                     elif var.startswith("@"):
                         name_scope,name_name,name_decos=get_scope_and_name(var[1:])
                         value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
@@ -186,6 +188,8 @@ class TTName:
                         else:
                             print ("Unknown enum-item:%s" % name)
                             return "UNKNOWN"
+            elif deco_id =="current":
+                name = self.default_value
             elif deco_id =="enum_strict":
                 enum_name=splits[1]
 
