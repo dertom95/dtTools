@@ -4,7 +4,6 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-
         {
             "name": "dtGen: create schema",
             "type": "python",
@@ -18,26 +17,27 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "dtGen(outside): generate data",
+            "name": "gmSerialization",
             "type": "python",
             "request": "launch",
-            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "program": "${workspaceFolder}/gen.py",
             "args" : [
-                "--config-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/config.json",
+                "--config-file","Assets/Scripts/Generator/gen-config.json",
                 "--xsd-schema-name","dtData",
-                "--xsd-output","output/aa/dtData.xsd",
-                "--gen-input-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/simple_inputdata.xml"
+                "--gen-root-folder","Assets/Scripts/generated",
+                "--xsd-output","Assets/Scripts/Generator/dtData.xsd",
+                "--gen-input-file","Assets/Scripts/input.xml"
             ],
-            "cwd": "/home/ttrocha/_dev/ALWAYSDEL/gen",
+            "cwd": "C:/gentlymad/test/SerializationTest",
             "console": "integratedTerminal"
         },        
         {
             "name": "dtGen: generate data",
             "type": "python",
             "request": "launch",
-            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "program": "${workspaceFolder}/gen.py",
             "args" : [
-                "--config-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/config.json",
+                "--config-file","${workspaceFolder}/sample/config.json",
                 "--xsd-schema-name","dtData",
                 "--xsd-output","output/dtData.xsd",
                 "--gen-input-file","sample/simple_inputdata.xml",
@@ -49,7 +49,7 @@
             "name": "dtGen: generate urho-binding(test)",
             "type": "python",
             "request": "launch",
-            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "program": "${workspaceFolder}/simplegenerator/gen.py",
             "args" : [
                 "--config-file","sample/urho.net/urho3d-config.json",
                 "--xsd-schema-name","UrhoDotNet",
@@ -66,9 +66,9 @@
             "name": "dtGen: generate urho-binding(inplace)",
             "type": "python",
             "request": "launch",
-            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "program": "${workspaceFolder}/simplegenerator/gen.py",
             "args" : [
-                "--config-file","/home/ttrocha/_dev/projects/python/simplegenerator/sample/urho.net/urho3d-config.json",
+                "--config-file","${workspaceFolder}/simplegenerator/sample/urho.net/urho3d-config.json",
                 "--xsd-schema-name","UrhoDotNet",
                 "--xsd-output","DefaultComponents/generated/UrhoDotNet.xsd",
                 "--gen-input-file","DefaultComponents/binding-gen.xml",
@@ -83,7 +83,7 @@
             "name": "dtGen: generate leoTest(inplace)",
             "type": "python",
             "request": "launch",
-            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "program": "${workspaceFolder}/simplegenerator/gen.py",
             "args" : [
                 "--config-file","/home/ttrocha/_dev/projects/games/urho.net/LeoTest/Source/Urho3d/Generator/gen-config.json",
                 "--xsd-schema-name","UrhoDotNet",
@@ -95,12 +95,29 @@
             ],
             "cwd": "/home/ttrocha/_dev/extprojects/urho.net/urho3d-dotnet/Source/Urho3D",            
             "console": "integratedTerminal"
-        },                 
+        },        
+        {
+            "name": "dtGen: test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/simplegenerator/gen.py",
+            "args" : [
+                "--config-file","/home/ttrocha/_dev/projects/games/urho.net/LeoTest/Source/Urho3d/Generator/gen-config.json",
+                "--xsd-schema-name","UrhoDotNet",
+                "--xsd-output","DefaultComponents/generated/UrhoDotNet.xsd",
+                "--gen-input-file","DefaultComponents/binding-gen.xml",
+                "--gen-force-overwrite","true",
+                "--gen-root-folder","DefaultComponents/generated",
+                "--verbose","true"
+            ],
+            "cwd": "${workspaceFolder}",            
+            "console": "integratedTerminal"
+        },             
         {
             "name": "dtGen: show options",
             "type": "python",
             "request": "launch",
-            "program": "/home/ttrocha/_dev/projects/python/simplegenerator/gen.py",
+            "program": "${workspaceFolder}/gen.py",
             "args" : [
                 "-h"
             ],

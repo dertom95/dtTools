@@ -1,4 +1,5 @@
-BlockTest
+/*block:bloxx|file:%s.bloxx,name|overwrite*/
+/*name:name|required*/BlockTest/*endname*/
 
 /*B:b1*/
 block1 /*name:type|enum:ctype*/int/*endname*/
@@ -19,3 +20,4 @@ asadasdadsdd
 
 
 /*endblock:b1*/
+/*endblock:bloxx*/

@@ -1,18 +1,32 @@
 #!/usr/bin/python3
 
+import io
 import json,os,sys,re
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
 generation_root=None
 option_force_overwrite=False
+ 
+def convert_to_valid_xml(text):
+    pattern = r'["][\w\s\<\>]*[\<\>]+[\w\s]*["]'
+    matches=re.findall(pattern,text)
+    for match in matches:
+        match_before = match
+        match = match.replace("<","&lt;")
+        match = match.replace(">","&gt;")
+        
+        # TODO: THIS is actually really ugly and has room for mayhem
+        text = text.replace(match_before,match)
+
+    return text
 
 def get_scope_and_name(name_data):
     name_name=None
     name_scope=None
     name_decos=None
 
-    first = name_data.find('|')
+    first = name_data.find('|') 
     if first!=-1:
         name_decos=name_data[first:]
         name_data=name_data[:first]
@@ -233,11 +247,11 @@ class TTName:
                 if_false = None
                 if len(infos)>1:
                     if_true=infos[1]
-                    if if_true=="@default":
+                    if if_true=="@current":
                         if_true=self.default_value
                 if len(infos)>2:
                     if_false=infos[2]
-                    if if_false=="@default":
+                    if if_false=="@current":
                         if_false=self.default_value
                 
                 while (True):
@@ -245,15 +259,18 @@ class TTName:
                     if not res:
                         break
                     var = res.group(1)
-                    if var=="@default":
-                        if_false=self.default_value
-                    varResult = self.ctx.resolve_var(var,'NONE','NONE_DEF')
+                    if var=="@current":
+                        var=self.default_value
+                    varResult = self.ctx.resolve_var(var,'NONE','None')
                     
                     try:
                         number=int(varResult)
                         condition=condition.replace(var,"%s"%varResult)
                     except:
-                        condition=condition.replace(var,"'%s'"%varResult)
+                        if varResult=="None":
+                            condition=condition.replace(var,"None")
+                        else:
+                            condition=condition.replace(var,"'%s'"%varResult)
 
                 condResult = eval(condition)
 
@@ -349,8 +366,8 @@ class TTBlock:
         self.execute_decorators()
 
     def check_conditions(self,check_context):
-        for condition_check in self.conditions:
-            result = condition_check(check_context)
+        for condition_check,data in self.conditions:
+            result = condition_check(check_context,data)
             if not result:
                 return False
         return True
@@ -423,18 +440,21 @@ class TTBlock:
                 self.filename = filenameString % vars
             elif deco_id=="else":
                 if not runtime:
-                    def check(check_context):
-                        ifblock=-1
-                        try:
-                            ifblock = int(splits[1])
-                            if check_context["ifblocks"][ifblock]==True:
+                    ifblock=-1
+                    try:
+                        ifblock = int(splits[1])
+                    except:
+                        pass
+
+                    def check(check_context,data):
+                        ifblock = data[0]
+                        if check_context["ifblocks"][ifblock]==True:
                                 # this block is already resolved
-                                return False
-                        except:
-                            if ifblock!=-1:
-                                check_context["ifblocks"][ifblock]=True
-                            return True
-                    self.conditions.append(check)
+                            return False
+                        if ifblock!=-1:
+                            check_context["ifblocks"][ifblock]=True
+                        return True
+                    self.conditions.append((check,(ifblock,)))
                                                             
             elif deco_id=="ifnset" or deco_id=="ifset":
                 is_equalcheck = deco_id=="ifset"
@@ -453,7 +473,8 @@ class TTBlock:
                         varvalue=vals[2]
                         ifblock=int(vals[0])
 
-                    def check(check_context):
+                    def check(check_context,data):
+                        varname,ifblock,varvalue=data
                         try:
                             if check_context["ifblocks"][ifblock]==True:
                                 # this if block is already resolved
@@ -463,7 +484,7 @@ class TTBlock:
                             pass
 
                         name_scope,name_name,name_decos=get_scope_and_name(varname)
-                        value = self.ctx.ttg.get_scoped_value(check_context["xml_current"],name_name)
+                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
                         
                         result = None
                         if is_equalcheck:
@@ -478,7 +499,7 @@ class TTBlock:
                         return result
 
                                         
-                    self.conditions.append(check)
+                    self.conditions.append((check,(varname,ifblock,varvalue)))
 
 
     def add_block(self,block):
@@ -708,9 +729,13 @@ class TTGenerator:
         self.ctx = None
 
         try:
+            file_exists = os.path.isfile(C.config_file_path)
+            file = open(C.config_file_path)
+            data = file.read() 
+            file.close()
             C.config = json.load(open(C.config_file_path))
-        except:
-            print("Could not find configuration-file:%s" % (C.config_file_path))
+        except Exception as e: # work on python 3.x
+            print("Could not find configuration-file:%s\nexception:%s" % (C.config_file_path,str(e)))
             os.abort()
 
         self.create_default_configs()
@@ -938,7 +963,16 @@ class TTGenerator:
     def executeFromFile(self,xml_data_path,config=None):
         self.ctx.runtime_mode=True
         # TODO: combine configs somehow
-        tree = ET.parse(xml_data_path)
+
+        # load xml-file as string
+        file = io.open(xml_data_path)
+        stXmlFile = file.read()
+        file.close()
+
+        # convert xml-string to be xml-compliant (e.g. change <bla src="List<string>"/>  to "List&lt;string&gt;"  )
+        result = convert_to_valid_xml(stXmlFile)
+
+        tree = ET.ElementTree(ET.fromstring(result))
         root = tree.getroot()
         return self.executeFromXml(root)
 

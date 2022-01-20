@@ -4,6 +4,11 @@
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
 
+
+<class name="Forty">
+    <field name="speed" type="float" default="10.0"/>
+</class>
+
 <class name="SettlerDataComponent">
     <field name="age" type="int" default="17"/>
     <field name="speed" type="float" default="12.0"/>
@@ -23,5 +28,9 @@ xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
     
     <method returnType="void" name="killSettler"/>
 </class> 
+
+<bloxx name="blocki">
+    <b1 type="int"/>
+</bloxx>
 
 </root>
