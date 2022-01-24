@@ -118,6 +118,10 @@ class TTName:
                 if not runtime_mode:
                     continue
                 name = name.lower()
+            elif deco_id == "c2s":
+                if not runtime_mode:
+                    continue
+                name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
             elif deco_id =="pre":
                 if not runtime_mode:
                     continue

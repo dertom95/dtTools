@@ -12,6 +12,7 @@ Block-Decorators:
 - |fu : *input first character upper-case* e.g. 
 - |l  : convert string to lower characters
 - |u  : convert string to uppper characters
+- |c2s : convert CamelCase to snake_case
 - |pre:prefix : *prefix to input*
 - |post:postfix : *postfix to input*
 - |post_n_blast:postfix : *postfix if not last block*
