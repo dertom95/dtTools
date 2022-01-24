@@ -110,6 +110,14 @@ class TTName:
                 if not runtime_mode:
                     continue
                 name = name[0].upper() + name[1:]
+            elif deco_id == "u":
+                if not runtime_mode:
+                    continue
+                name = name.upper()
+            elif deco_id == "l":
+                if not runtime_mode:
+                    continue
+                name = name.lower()
             elif deco_id =="pre":
                 if not runtime_mode:
                     continue
@@ -734,13 +742,39 @@ class TTGenerator:
             data = file.read() 
             file.close()
             C.config = json.load(open(C.config_file_path))
+            self.load_imports()
+
+
         except Exception as e: # work on python 3.x
             print("Could not find configuration-file:%s\nexception:%s" % (C.config_file_path,str(e)))
             os.abort()
 
         self.create_default_configs()
 #        self.parseTemplates()
-        
+
+    def load_imports(self):
+        if "imports" in C.config:
+            for import_path in C.config['imports']:
+                # include all templates of the imports as well
+                try:
+                    import_path = C.config_folder+"/"+import_path
+                    import_folder = os.path.dirname(import_path)
+                    print("import config:%s" % import_path)
+                    ijson = json.load(open(import_path))
+                    if "templates" in ijson:
+                        orig_templates = C.config["templates"]
+                        for i_template in ijson["templates"]:
+                            newpath = import_folder+"/"+i_template["path"]
+                            if os.path.isfile(newpath):
+                                i_template["path"]=newpath
+                                orig_templates.append(i_template)    
+                            else:
+                                print("Unknown file as imported template:%s" % newpath)
+                except Exception as e:
+                    print("Could not load IMPORT-JSON:%s" % import_path)
+                 
+
+
     def check_default(self,json,key,defaultvalue):
         if key not in json:
             json[key]=defaultvalue

@@ -10,6 +10,8 @@ Block-Decorators:
 - |required : attribute is required
 - |auto : *element is triggered even without input*
 - |fu : *input first character upper-case* e.g. 
+- |l  : convert string to lower characters
+- |u  : convert string to uppper characters
 - |pre:prefix : *prefix to input*
 - |post:postfix : *postfix to input*
 - |post_n_blast:postfix : *postfix if not last block*

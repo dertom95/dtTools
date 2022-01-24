@@ -83,7 +83,7 @@
             "name": "dtGen: generate leoTest(inplace)",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/simplegenerator/gen.py",
+            "program": "${workspaceFolder}/gen.py",
             "args" : [
                 "--config-file","/home/ttrocha/_dev/projects/games/urho.net/LeoTest/Source/Urho3d/Generator/gen-config.json",
                 "--xsd-schema-name","UrhoDotNet",
