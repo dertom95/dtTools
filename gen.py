@@ -94,6 +94,9 @@ class TTName:
     def get_enum_type(self):
         return self.enum_type
 
+    def replace_special_characters(self,st):
+        st.relace("&colon;",":")
+
     def apply_decorators(self,name):
         runtime_mode = self.ctx.runtime_mode
         store_name = None
@@ -102,6 +105,8 @@ class TTName:
         for decorator in self.decorators:
             splits = decorator.split(':',1)
             deco_id = splits[0].lower()
+            if len(splits)>1:
+                splits[1]=self.replace_special_characters(splits[1])
 
             if deco_id == "auto":
                 # is handled somewhere else
@@ -1198,7 +1203,7 @@ parser = argparse.ArgumentParser(description='Add some integers.')
                     
 parser.add_argument('--config-file', type=str, 
                     help='path to dtGen-configuration-file',required=True)
-parser.add_argument('--gen-input-file', type=str, 
+parser.add_argument('--gen-input-file', action="append",
                     help='path to generation input-data-file')
 parser.add_argument('--gen-root-folder', type=str, default="./generated",
                     help='output root path for generated files')
@@ -1210,12 +1215,15 @@ parser.add_argument('--verbose', type=bool,default=False,help="verbose mode")
 parser.add_argument('--xsd-schema-name', type=str, default="dtGen",
                     help='name of the schema')
 parser.add_argument('--xsd-output', type=str, 
-                    help='path to xsd output-file')                   
+                    help='path to xsd output-file') 
+
+parser.add_argument('--gen-inputfile-if-missing',type=bool,help='if the specified input xml-file (--gen-input-file) is not present, create a boilerplate.xml')                  
 
 args = parser.parse_args()
 
-
+has_input_files = hasattr(args,"gen_input_file") and args.gen_input_file!=None and len(args.gen_input_file)>0
 option_force_overwrite = args.gen_force_overwrite
+option_gen_inputfile = args.gen_inputfile_if_missing
 verbose = args.verbose
 
 if verbose:
@@ -1242,17 +1250,43 @@ if hasattr(args,"xsd_output"):
 
 
 
-if hasattr(args,"gen_input_file") and args.gen_input_file!=None and args.gen_input_file!="":
+if has_input_files:
     # "/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml"
     generation_root = os.path.abspath(args.gen_root_folder)
     try:
         os.makedirs(generation_root)
     except:
         pass
+    for input_file in args.gen_input_file:
+        if os.path.exists(input_file):
+            result = gen.executeFromFile(input_file)
+            results = result["template_results"]
+            did_action=True
+        else:
+            # the input file is not present
+            if option_gen_inputfile:
+                folder_input_file = os.path.dirname(input_file)
+                folder_xsd_output = os.path.dirname(args.xsd_output)
+                rel_folder = os.path.relpath(folder_xsd_output,folder_input_file)
 
-    result = gen.executeFromFile(args.gen_input_file)
-    results = result["template_results"]
-    did_action=True
+                filename_xsd = os.path.basename(args.xsd_output)
+
+                # path to locate xsd within xml-file:
+                xml_xsd_path = rel_folder+"/"+filename_xsd
+
+                # create a simple one to have all this xsd-stuff filled out for you
+                boilerplate_xml="""<?xml version="1.0"?>
+
+<{0} xmlns="https://{1}.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://{1}.com {2}">
+
+</{0}>      
+                """.format('root',args.xsd_schema_name,xml_xsd_path)
+                # write boilerplate
+                new_file = open(input_file,"w")
+                new_file.write(boilerplate_xml)
+                new_file.close()
+
+
 
 if not did_action:
     print("neither --xsd-output nor --input-file were set!!! NOTHING TO DO")    
