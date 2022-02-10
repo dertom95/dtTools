@@ -8,6 +8,8 @@ from xml.dom import minidom
 generation_root=None
 option_force_overwrite=False
  
+marker_pattern="\|<#.*?#>\|"
+
 def convert_to_valid_xml(text):
     pattern = r'["][\w\s\<\>]*[\<\>]+[\w\s]*["]'
     matches=re.findall(pattern,text)
@@ -95,7 +97,7 @@ class TTName:
         return self.enum_type
 
     def replace_special_characters(self,st):
-        st.relace("&colon;",":")
+        return st.replace("&colon;",":")
 
     def apply_decorators(self,name):
         runtime_mode = self.ctx.runtime_mode
@@ -219,7 +221,7 @@ class TTName:
                         else:
                             print ("Unknown enum-item:%s" % name)
                             return "UNKNOWN"
-            elif deco_id =="current":
+            elif deco_id =="default":
                 name = self.default_value
             elif deco_id =="enum_strict":
                 enum_name=splits[1]
@@ -346,14 +348,20 @@ class TTOutput:
     def __init__(self,output_string):
         split = output_string.split(',')
         self.output_block = split[0]
-        self.attrib,self.attrib_value = split[1].split('==')
+        try:
+            self.attrib,self.attrib_value = split[1].split('==')
+        except:
+            self.attrib=None
+            self.attrib_value=None
 
     def check(self,xml):
+        #TODO: rework this 
         if self.attrib in xml.attrib:
             xml_value = xml.attrib[self.attrib]
-            if xml_value==self.attrib_value:
-                return self.output_block
-        return None
+            if xml_value!=self.attrib_value:
+                return None
+        return self.output_block
+
 
 class TTBlock:
 
@@ -1031,7 +1039,6 @@ class TTGenerator:
         if tag==C.rootname:
             for template in C.config[C.CONFIG_TEMPLATES]:
                 template_result = self.executeTemplate(template["template"],root)
-                template_result = re.sub("\|<#.*?#>\|","",template_result)
                 template_results.append({"template":template,"result":template_result})
         result["template_results"]=template_results
         result["context"]=self.ctx
@@ -1187,6 +1194,11 @@ class TTGenerator:
         if current_block.filename:
             current_result = current_result.replace(block_marker,"")
             output_filename = "%s/%s" %(generation_root,current_block.filename)
+            # remove markers
+            # TODO: actually there shouldn't be an left,right? Check this
+            current_result = re.sub(marker_pattern,"",current_result)
+            # stash multiple newlines to one
+            current_result = re.sub(r'\n\s*\n', '\n\n', current_result)            
             if current_block.file_overwrite or option_force_overwrite or not os.path.isfile(output_filename):
                 # save this block as dedicated file and do not include to result
                 f = open(output_filename,"w")

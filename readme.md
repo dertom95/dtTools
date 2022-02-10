@@ -5,6 +5,16 @@ Block-Decorators:
   /*block:params|else:0*/
   ```
 - |else:ifID *checks if this ifID is not triggered,yet. sample see ifset*
+- |file:%s.h,name : write filename python string with replacements after first comma
+- |overwrite : overwrites file? todo: isn't that default?
+- |output : output in alternative block (same level)
+  ```
+  /*block:loop|output:codeflow*/
+          ...
+  /*endblock:loop*/
+
+  /*block:codeflow*//*endblock:codeflow*/
+  ```
 
 <code>Name-Decorators:
 - |required : attribute is required
@@ -29,7 +39,7 @@ Block-Decorators:
   ```
 - |enum_mod
 - |enum_strict
-- |current : value that is used in the template
+- |default : value that is used in the template
 - |map
 - |getmap
 - |if:condition,true-output,false-output

@@ -17,6 +17,24 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "code",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen.py",
+            "args" : [
+                "--config-file","sample-code/gen-config.json",
+                "--xsd-schema-name","dtCode",
+                "--xsd-output","sample-code/generated/dtCode.xsd",
+                "--gen-input-file","sample-code/gen-data.xml",
+                "--gen-force-overwrite","true",
+                "--gen-root-folder","sample-code/generated",
+                "--gen-inputfile-if-missing","true",
+                "--verbose","true"
+            ],
+            //"cwd": "/home/ttrocha/_dev/extprojects/urho.net/urho3d-dotnet/Source/Urho3D/DotNet/generated",            
+            "console": "integratedTerminal"
+        }, 
+        {
             "name": "gmSerialization",
             "type": "python",
             "request": "launch",
