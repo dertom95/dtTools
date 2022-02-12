@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<root xmlns="https://dtData.com"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
+
+<commands namespace="aa">
+
+    <command commandId="123" name="CMDAbc" server="1">
+        <field name="f1" type="float" />
+    </command>
+
+</commands>
+
+
+</root>

@@ -509,7 +509,7 @@ class TTBlock:
                             pass
 
                         name_scope,name_name,name_decos=get_scope_and_name(varname)
-                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name)
+                        value = self.ctx.ttg.get_scoped_value(name_scope,name_name,check_context["xml_current"])
                         
                         result = None
                         if is_equalcheck:
@@ -1044,9 +1044,11 @@ class TTGenerator:
         result["context"]=self.ctx
         return result
 
-    def find_xml_for_scope(self,scope_signature):
+    def find_xml_for_scope(self,scope_signature,ctx=None):
         if not scope_signature:
-            return self.ctx.xml_current
+            return ctx or self.ctx.xml_current
+
+        ctx = ctx or self.ctx
 
         if type(scope_signature)==ET.Element:
             return scope_signature    
@@ -1055,7 +1057,7 @@ class TTGenerator:
         block_splits.reverse()
         
         current = block_splits.pop(0)
-        xml_scope = []+self.ctx.current_xmlscope
+        xml_scope = []+ctx.current_xmlscope
         xml_scope.reverse()
 
         found_start = False
@@ -1077,11 +1079,11 @@ class TTGenerator:
             
         return None
 
-    def get_scoped_value(self,scope,key):
+    def get_scoped_value(self,scope,key,ctx=None):
         if not key:
             scope_splits = scope.split('.')
         
-        scope_xml = self.find_xml_for_scope(scope)
+        scope_xml = self.find_xml_for_scope(scope,ctx)
         if scope_xml is not None:
             try:
                 value = scope_xml.attrib[key]        
@@ -1173,7 +1175,6 @@ class TTGenerator:
                     self.ctx.current_xmlscope.append(xml_child)
                     self.ctx.current_scope=calllist
                     self.ctx.current_xml_idx=idx
-                    
                     try:
                         self.ctx.current_xml_len=len(xml)
                     except:
@@ -1216,7 +1217,7 @@ parser = argparse.ArgumentParser(description='Add some integers.')
 parser.add_argument('--config-file', type=str, 
                     help='path to dtGen-configuration-file',required=True)
 parser.add_argument('--gen-input-file', action="append",
-                    help='path to generation input-data-file')
+                    help='path to generation input-data-file. (multiple usages possible)')
 parser.add_argument('--gen-root-folder', type=str, default="./generated",
                     help='output root path for generated files')
 

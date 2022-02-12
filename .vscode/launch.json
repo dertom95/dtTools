@@ -64,6 +64,20 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "dtGen: generate commands",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen.py",
+            "args" : [
+                "--config-file","${workspaceFolder}/sample/config.json",
+                "--xsd-schema-name","dtData",
+                "--xsd-output","output/dtData.xsd",
+                "--gen-input-file","sample/commands_input.xml",
+                "--gen-force-overwrite","true"
+            ],
+            "console": "integratedTerminal"
+        },        
+        {
             "name": "dtGen: generate urho-binding(test)",
             "type": "python",
             "request": "launch",
@@ -103,10 +117,12 @@
             "request": "launch",
             "program": "${workspaceFolder}/gen.py",
             "args" : [
-                "--config-file","/home/ttrocha/_dev/projects/games/urho.net/LeoTest/Source/Urho3d/Generator/gen-config.json",
+                "--config-file","/home/ttrocha/_dev/projects/games/urho.net/LeoTest/LeoTest.Main/Source/Urho3d/Generator/gen-config.json",
                 "--xsd-schema-name","UrhoDotNet",
                 "--xsd-output","DefaultComponents/generated/UrhoDotNet.xsd",
-                "--gen-input-file","DefaultComponents/binding-gen.xml",
+                "--gen-input-file","../../gen/commands-gen.xml",
+                "--gen-input-file","../../gen/components-gen.xml",
+
                 "--gen-force-overwrite","true",
                 "--gen-root-folder","DefaultComponents/generated",
                 "--verbose","true"

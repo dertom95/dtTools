@@ -12,6 +12,10 @@
         {
             "name": "blocktest",
             "path": "block.test"
+        },
+        {
+            "name": "commands",
+            "path": "DefaultCommand.cs"
         }
     ]
 }

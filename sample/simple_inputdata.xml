@@ -4,7 +4,13 @@
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
 
+<commands namespace="aa">
 
+    <command commandId="123" name="CMDAbc" server="1">
+        <field name="f1" type="float" />
+    </command>
+
+</commands>
 <class name="Forty">
     <field name="speed" type="float" default="10.0"/>
 </class>
@@ -16,17 +22,19 @@ xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
     
     <method returnType="void" name="killSettler"/>
     <method returnType="bool" name="marry"/>
-    <method name="Epsilon" returnType="float">
+    <method name="Epsilon" returnType="float" comment="aaaa">
         <params name="tore" type="int"/>
         <params name="abseits" type="bool" />
         <params name="spieler" type="string" />
+        
     </method> 
+    
 </class> 
 
 <class name="SettlerRuntimeComponent">
     <field type="int" name="counter"/> 
     
-    <method returnType="void" name="killSettler"/>
+    <method returnType="void" name="killSettler" />
 </class> 
 
 <bloxx name="blocki">

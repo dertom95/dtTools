@@ -11,7 +11,7 @@ Block-Decorators:
   ```
   /*block:loop|output:codeflow*/
           ...
-  /*endblock:loop*/
+  /*endblock:loop*/d
 
   /*block:codeflow*//*endblock:codeflow*/
   ```
