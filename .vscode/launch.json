@@ -119,15 +119,15 @@
             "args" : [
                 "--config-file","/home/ttrocha/_dev/projects/games/urho.net/LeoTest/LeoTest.Main/Source/Urho3d/Generator/gen-config.json",
                 "--xsd-schema-name","UrhoDotNet",
-                "--xsd-output","DefaultComponents/generated/UrhoDotNet.xsd",
+                "--xsd-output","generated/UrhoDotNet.xsd",
                 "--gen-input-file","../../gen/commands-gen.xml",
                 "--gen-input-file","../../gen/components-gen.xml",
 
                 "--gen-force-overwrite","true",
-                "--gen-root-folder","DefaultComponents/generated",
+                "--gen-root-folder","generated",
                 "--verbose","true"
             ],
-            "cwd": "/home/ttrocha/_dev/extprojects/urho.net/urho3d-dotnet/Source/Urho3D",            
+            "cwd": "/home/ttrocha/_dev/projects/games/urho.net/LeoTest/LeoTest.Main/Source/Urho3d",            
             "console": "integratedTerminal"
         },        
         {

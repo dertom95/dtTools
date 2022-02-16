@@ -25,11 +25,19 @@ Block-Decorators:
 - |c2s : convert CamelCase to snake_case
 - |pre:prefix : *prefix to input*
 - |post:postfix : *postfix to input*
-- |post_n_blast:postfix : *postfix if not last block*
+- |post_n_blast:postfix,[tag-filter] : *postfix if not last block*, use tag-filter to only count idx and len of specified tag-type. use 'comma' as keyword if needed (dont use the character itself in combination with filter)
+  ```
+  post_n_blast:comma,field
+  ```
 - |store
 - |lstore
 - |lget
-- |echo:string,var1,var2,... : *corresponds to python str % (var1,var2,...). special vars: @=input @default=value of template @scoped_value_name)
+- |echo:string,var1,var2,... : *corresponds to python str % (var1,var2,...). 
+  special vars: 
+    * @=input 
+    * @default=(value of template @scoped_value_name) 
+    * @idx=(elem-idx in xml-block) 
+    * @idx#tag=(elem-idx of this tag in the current xml-block)
   ```
   /*name:name|echo:%s_%s,@class.name,@*/Audio_SetMode/*endname*/
   ```

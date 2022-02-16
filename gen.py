@@ -165,7 +165,13 @@ class TTName:
                 echo_output = echo_splits[0]
                 vars = ()
                 for var in echo_splits[1:]:
-                    if var=="@":
+                    if var.startswith("@idx"):
+                        data = var.split('#',1)
+                        if len(data)==1:
+                            vars+=(self.ctx.current_xml_idx,)
+                        else:
+                            vars+=(self.ctx.current_xml_tag_idx[data[1]],)
+                    elif var=="@":
                         vars+=(name,)
                     elif var=="@current":
                         vars+=(self.default_value,)
@@ -186,8 +192,32 @@ class TTName:
             elif deco_id =="post_n_blast":
                 if not runtime_mode:
                     continue
-                if self.ctx.current_xml_idx+1 < self.ctx.current_xml_len:
-                    name = name + splits[1]
+
+                data = splits[1].split(',',1)
+                
+                elem_length = self.ctx.current_xml_len
+                elem_idx = self.ctx.current_xml_idx
+                output = None
+                if len(data)>1:
+                    if data[0]!="" and data[1]!="":
+                        output=data[0]
+                        try:
+                            elem_length = self.ctx.current_xml_tag_len[data[1]]
+                            elem_idx = self.ctx.current_xml_tag_idx[data[1]]
+                        except:
+                            print("unknown tag-filter:%s setting len=0" % data[1])
+                            elem_length = 0
+                            elem_idx = 0
+                    else:
+                        output=splits[1]
+                else:
+                    output=splits[1]
+                
+                if output=="comma":
+                    output=","
+
+                if elem_idx+1 < elem_length:
+                    name = name + output
             elif deco_id =="required":
                 if runtime_mode:
                     continue
@@ -644,7 +674,27 @@ class ParseContext:
         self.runtime_mode = False
         self.current_xml_len = None
         self.current_xml_idx = None
+        self.current_xml_tag_idx = {}
+        self.current_xml_tag_len = {}
         self.stored_lists = None
+    
+    def count_and_init_xml_tag_length(self,xmlblock):
+        for xml in xmlblock:
+            current_tag = strip_tag(xml.tag)
+            if current_tag not in self.current_xml_tag_len:
+                self.current_xml_tag_len[current_tag]=1
+                self.current_xml_tag_idx[current_tag]=-1 # init with -1 due to starting with increment =>0
+            else:
+                self.current_xml_tag_len[current_tag]+=1
+    
+    #untested
+    def amount_tags_in_xml(self,xmlblock,tag):
+        amount=0
+        for xml in xmlblock:
+            current_tag = strip_tag(xml.tag)
+            if (current_tag==tag):
+                amount+=1
+        return amount
 
     def store_to_list(self,list_name,value):
         if not self.stored_lists:
@@ -1165,9 +1215,15 @@ class TTGenerator:
             # block-process
             before_current_xml_len=self.ctx.current_xml_len
             before_current_xml_idx=self.ctx.current_xml_idx
+            before_current_xml_tag_idx = self.ctx.current_xml_tag_idx
+            before_current_xml_tag_len = self.ctx.current_xml_tag_len
+            self.ctx.current_xml_tag_idx = {}
+            self.ctx.current_xml_tag_len = {}            
             idx=0
+            self.ctx.count_and_init_xml_tag_length(xml)
             for xml_child in xml:
                 child_tag = strip_tag(xml_child.tag)
+                self.ctx.current_xml_tag_idx[child_tag]+=1
 
                 new_blocks = current_block.get_block_with_name(child_tag)
                 if new_blocks:
@@ -1186,6 +1242,9 @@ class TTGenerator:
 
             self.ctx.current_xml_len = before_current_xml_len
             self.ctx.current_xml_idx = before_current_xml_idx
+            self.ctx.current_xml_tag_idx = before_current_xml_tag_idx
+            self.ctx.current_xml_tag_len = before_current_xml_tag_len
+
 
         # remove markers added by this block
         a=0
@@ -1271,6 +1330,7 @@ if has_input_files:
     except:
         pass
     for input_file in args.gen_input_file:
+        #input_abs = os.path.abspath(input_file)
         if os.path.exists(input_file):
             result = gen.executeFromFile(input_file)
             results = result["template_results"]
