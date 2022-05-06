@@ -22,6 +22,7 @@ Block-Decorators:
 - |fu : *input first character upper-case* e.g. 
 - |l  : convert string to lower characters
 - |u  : convert string to uppper characters
+- |replace,from,to : replaces 'from' string with 'to'-string
 - |c2s : convert CamelCase to snake_case
 - |pre:prefix : *prefix to input*
 - |post:postfix : *postfix to input*
@@ -60,4 +61,5 @@ Block-Decorators:
 
 TODO: FIX If-Blocks
 TODO: enum: dynamic add e.g. classname (runtime have to write in xsd!?)
+TODO: names: global decorators that are valid for all names of this type. (e.g. replace '['=>'<' should be applied to all types so you won't need to add this command everywhere
 

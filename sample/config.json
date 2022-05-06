@@ -2,20 +2,8 @@
     "rootname": "root",
     "templates": [
         {
-            "name": "cppheader",
-            "path": "simple_cpp.h"
-        },
-        {
-            "name": "cppbody",
-            "path": "simple_cpp.cpp"
-        },        
-        {
-            "name": "blocktest",
-            "path": "block.test"
-        },
-        {
-            "name": "commands",
-            "path": "DefaultCommand.cs"
+            "name": "thepipeline",
+            "path": "thepipeline.test"
         }
     ]
 }

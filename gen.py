@@ -10,15 +10,16 @@ option_force_overwrite=False
  
 marker_pattern="\|<#.*?#>\|"
 
-def convert_to_valid_xml(text):
-    pattern = r'["][\w\s\<\>]*[\<\>]+[\w\s]*["]'
+def convert_to_valid_xml(text,replace_brackets=False):
+    # TODO: this pattern seems to be not suitable, as it will capture "..." inside text-fields. but for now...
+
+    pattern = r'["][\w\s\<\>*[\<\>]+[\w\s]*["]'
     matches=re.findall(pattern,text)
     for match in matches:
         match_before = match
         match = match.replace("<","&lt;")
         match = match.replace(">","&gt;")
-        
-        # TODO: THIS is actually really ugly and has room for mayhem
+
         text = text.replace(match_before,match)
 
     return text
@@ -218,10 +219,19 @@ class TTName:
 
                 if elem_idx+1 < elem_length:
                     name = name + output
+            elif deco_id =="debug":
+                debug_id = splits[1]
+                if debug_id=="struct" and "[" in name:
+                    a=0
             elif deco_id =="required":
                 if runtime_mode:
                     continue
                 self.required=True
+            elif deco_id == "replace":
+                if not runtime_mode:
+                    continue
+                info = splits[1].split(",")
+                name = name.replace(info[0],info[1])
             elif deco_id =="enum":
                 info = splits[1].split(",")
                 
@@ -247,10 +257,11 @@ class TTName:
                         name = self.ctx.get_enum_item(enum_name,name)
                     else:
                         if not self.ctx.is_enum_strict(enum_name):
-                            return name
+                            #unknown type but its ok because not strict
+                            pass
                         else:
                             print ("Unknown enum-item:%s" % name)
-                            return "UNKNOWN"
+                            name = "UNKNOWN"
             elif deco_id =="default":
                 name = self.default_value
             elif deco_id =="enum_strict":

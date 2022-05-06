@@ -11,8 +11,8 @@
             "program": "${workspaceFolder}/gen.py",
             "args" : [
                 "--config-file","sample/config.json",
-                "--xsd-schema-name","dtData",
-                "--xsd-output","output/aa/dtData.xsd"
+                "--xsd-schema-name","thepipeline",
+                "--xsd-output","output/thepipeline.xsd"
             ],
             "console": "integratedTerminal"
         },
