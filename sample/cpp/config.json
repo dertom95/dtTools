@@ -1,5 +1,13 @@
 {
+    "name" : "cpp-generator",
     "rootname": "root",
+    "config" : {
+        "xsd-schema-name":"dtData",
+        "xsd-output":"${configfolder}/output/dtData.xsd",
+        "gen-input-file":["${configfolder}/simple_inputdata.xml"],
+        "gen-force-overwrite":true,
+        "gen-root-folder":"${configfolder}/output"
+    },
     "templates": [
         {
             "name": "cpp-header",

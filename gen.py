@@ -2,6 +2,7 @@
 
 import io
 import json,os,sys,re
+from pydoc import resolve
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
@@ -805,14 +806,24 @@ class ParseContext:
     #     return None
 
 
-
 class TTGenerator:
-    def __init__(self, config_filepath):
+    def __init__(self, config_filepath,args):
+        C.args=args
         C.config_file_path = os.path.abspath(config_filepath)
         C.config_folder = os.path.dirname(C.config_file_path)
 
         self.current_template = None
         self.ctx = None
+
+        def resolve_values(value):
+            value_type = type(value)
+            if value_type is str:
+                value = value.replace("${configfolder}",C.config_folder)
+            elif value_type is list:
+                for i in range(len(value)):
+                    value[i]=resolve_values(value[i])
+            return value
+
 
         try:
             file_exists = os.path.isfile(C.config_file_path)
@@ -820,6 +831,19 @@ class TTGenerator:
             data = file.read() 
             file.close()
             C.config = json.load(open(C.config_file_path))
+            if "config" in C.config:
+                confs = C.config["config"]
+                for key in confs:
+                    value = confs[key]
+                    old_key=key
+                    key = key.replace("-","_")
+                    value=resolve_values(value)
+                    if hasattr(args,key):
+                        setattr(args,key,value)
+                    else:
+                        print("unknown config: %s:%s" %(old_key,value))
+                        setattr(args,key,value)
+
             self.load_imports()
 
 
@@ -1304,6 +1328,10 @@ parser.add_argument('--gen-inputfile-if-missing',type=bool,help='if the specifie
 
 args = parser.parse_args()
 
+
+gen = TTGenerator(args.config_file,args)
+gen.parseTemplates()
+
 has_input_files = hasattr(args,"gen_input_file") and args.gen_input_file!=None and len(args.gen_input_file)>0
 option_force_overwrite = args.gen_force_overwrite
 option_gen_inputfile = args.gen_inputfile_if_missing
@@ -1312,8 +1340,6 @@ verbose = args.verbose
 if verbose:
     print("working-directory: %s" % (os.getcwd()))
 
-gen = TTGenerator(args.config_file)
-gen.parseTemplates()
 
 did_action = False
 

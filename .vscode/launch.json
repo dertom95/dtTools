@@ -56,11 +56,11 @@
             "program": "${workspaceFolder}/gen.py",
             "args" : [
                 "--config-file","${workspaceFolder}/sample/cpp/config.json",
-                "--xsd-schema-name","dtData",
-                "--xsd-output","sample/cpp/output/dtData.xsd",
-                "--gen-input-file","sample/cpp/simple_inputdata.xml",
-                "--gen-force-overwrite","true",
-                "--gen-root-folder","sample/cpp/output",
+                // "--xsd-schema-name","dtData",
+                // "--xsd-output","sample/cpp/output/dtData.xsd",
+                // "--gen-input-file","sample/cpp/simple_inputdata.xml",
+                // "--gen-force-overwrite","true",
+                // "--gen-root-folder","sample/cpp/output",
             ],
             "console": "integratedTerminal"
         },
