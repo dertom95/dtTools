@@ -1,0 +1,13 @@
+{
+    "rootname": "root",
+    "templates": [
+        {
+            "name": "cpp-header",
+            "path": "templates/simple_cpp.h"
+        },
+        {
+            "name": "cpp-body",
+            "path": "templates/simple_cpp.cpp"
+        }
+    ]
+}

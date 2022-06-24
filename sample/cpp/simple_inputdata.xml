@@ -2,15 +2,8 @@
 
 <root xmlns="https://dtData.com"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
+xsi:schemaLocation="https://dtData.com output/dtData.xsd">
 
-<commands namespace="aa">
-
-    <command commandId="123" name="CMDAbc" server="1">
-        <field name="f1" type="float" />
-    </command>
-
-</commands>
 <class name="Forty">
     <field name="speed" type="float" default="10.0"/>
 </class>
@@ -37,8 +30,5 @@ xsi:schemaLocation="https://dtData.com ../output/dtData.xsd">
     <method returnType="void" name="killSettler" />
 </class> 
 
-<bloxx name="blocki">
-    <b1 type="int"/>
-</bloxx>
 
 </root>

@@ -1,0 +1,66 @@
+<?xml version="1.0" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://dtData.com" xmlns="https://dtData.com" elementFormDefault="qualified">
+	<xs:simpleType name="ctype" final="restriction">
+		<xs:union>
+			<xs:simpleType>
+				<xs:restriction base="xs:string"/>
+			</xs:simpleType>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="bool"/>
+					<xs:enumeration value="float"/>
+					<xs:enumeration value="int"/>
+					<xs:enumeration value="string"/>
+					<xs:enumeration value="void"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
+	<xs:element name="root">
+		<xs:complexType>
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="class">
+					<xs:complexType>
+						<xs:choice minOccurs="0" maxOccurs="unbounded">
+							<xs:element name="field">
+								<xs:complexType>
+									<xs:attribute name="default" type="xs:string"/>
+									<xs:attribute name="name" type="xs:string" use="required"/>
+									<xs:attribute name="type" type="ctype" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="method">
+								<xs:complexType>
+									<xs:choice minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="params">
+											<xs:complexType>
+												<xs:attribute name="name" type="xs:string" use="required"/>
+												<xs:attribute name="type" type="ctype" use="required"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:choice>
+									<xs:attribute name="comment" type="xs:string"/>
+									<xs:attribute name="name" type="xs:string" use="required"/>
+									<xs:attribute name="returnType" type="ctype" use="required"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="privateSection">
+								<xs:complexType/>
+							</xs:element>
+							<xs:element name="publicSection">
+								<xs:complexType/>
+							</xs:element>
+							<xs:element name="rip">
+								<xs:complexType>
+									<xs:attribute name="type" type="ctype"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:choice>
+						<xs:attribute name="name" type="xs:string"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:choice>
+			<xs:attribute name="ips" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

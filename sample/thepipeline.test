@@ -1,0 +1,17 @@
+/*block:thepipeline*/
+<thepipeline>
+  /*block:tool*/
+    <tool id="/*name:id|required*/img2tim/*endname*/" type="/*name:type|enum:cli,tooltype|required*/cli/*endname*/" target="/*name:target|enum:psx,targettype*/psx/*endname*/">
+    /*block:command*/
+        <command host="/*name:host|enum:linux,hosttype*/linux/*endname*/" file="/*name:file*/@/tools/linux/ic/psx/img2tim/*endname*/"/>
+    </tool>
+    /*block:rip*/    
+    <command host="/*name:host|enum:win,hosttype*/win/*endname*/" file="@/tools/linux/ic/psx/img2tim"/>
+    <command host="/*name:host|enum:macos,hosttype*/macos/*endname*/" file="@/tools/linux/ic/psx/img2tim"/>
+    <command host="/*name:host|enum:linux-arm,hosttype*/linux-arm/*endname*/" file="@/tools/linux/ic/psx/img2tim"/>
+    /*endblock:rip*/
+
+    /*endblock:command*/
+  /*endblock:tool*/    
+</thepipeline>
+/*endblock:thepipeline*/

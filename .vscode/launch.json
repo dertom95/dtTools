@@ -50,16 +50,17 @@
             "console": "integratedTerminal"
         },        
         {
-            "name": "dtGen: generate data",
+            "name": "dtGen: cpp-test",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/gen.py",
             "args" : [
-                "--config-file","${workspaceFolder}/sample/config.json",
+                "--config-file","${workspaceFolder}/sample/cpp/config.json",
                 "--xsd-schema-name","dtData",
-                "--xsd-output","output/dtData.xsd",
-                "--gen-input-file","sample/simple_inputdata.xml",
-                "--gen-force-overwrite","true"
+                "--xsd-output","sample/cpp/output/dtData.xsd",
+                "--gen-input-file","sample/cpp/simple_inputdata.xml",
+                "--gen-force-overwrite","true",
+                "--gen-root-folder","sample/cpp/output",
             ],
             "console": "integratedTerminal"
         },
