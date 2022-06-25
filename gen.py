@@ -1443,6 +1443,7 @@ if start_runtime:
             do_xsd_output()
         elif event.src_path in template_files:
             print("TEMPLATE CHANGED")
+            gen.parseTemplates()
             do_xsd_output()
             do_generate()
 
