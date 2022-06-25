@@ -1,0 +1,17 @@
+{
+    "name" : "cs-command",
+    "rootname": "root",
+    "config" : {
+        "xsd-schema-name":"dtCommand",
+        "xsd-output":"${configfolder}/gen/xsd/dtCommand.xsd",
+        "gen-input-file":["${configfolder}/simple_inputdata.xml"],
+        "gen-force-overwrite":true,
+        "gen-root-folder":"${configfolder}/gen/output"
+    }, 
+    "templates": [
+        {
+            "name": "command",
+            "path": "templates/DefaultCommand.cs"
+        }
+    ] 
+}

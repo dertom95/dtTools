@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import io
-import json,os,sys,re
+import json,os,sys,re,glob
 from pydoc import resolve
 from time import sleep
 import xml.etree.ElementTree as ET
@@ -1322,6 +1322,9 @@ parser.add_argument('--config-file', type=str,
                     help='path to dtGen-configuration-file',required=True)
 parser.add_argument('--gen-input-file', action="append",
                     help='path to generation input-data-file. (multiple usages possible)')
+parser.add_argument('--gen-input-folder', action="append",
+                    help='folders in which you can put input-files without the need to explicitly name it in --gen-input-file')
+
 parser.add_argument('--gen-root-folder', type=str, default="./generated",
                     help='output root path for generated files')
 
@@ -1338,9 +1341,19 @@ parser.add_argument('--gen-inputfile-if-missing',type=bool,help='if the specifie
 parser.add_argument('--start-runtime',type=bool,help="start runtime to automatically track modified files and generate specific data")
 args = parser.parse_args()
 
+if args.gen_input_folder==None:
+    args.gen_input_folder=[]
+
 
 gen = TTGenerator(args.config_file,args)
 gen.parseTemplates()
+
+for folder in args.gen_input_folder:
+    files=glob.glob(folder+"/*.xml")
+    if args.gen_input_file==None:
+        args.gen_input_file=[]
+    args.gen_input_file += files
+
 
 has_input_files = hasattr(args,"gen_input_file") and args.gen_input_file!=None and len(args.gen_input_file)>0
 option_force_overwrite = args.gen_force_overwrite
@@ -1422,21 +1435,31 @@ if not did_action:
 
 
 if start_runtime:
-    watch_directories=[]
+    explicit_input_folders = args.gen_input_folder
+    watch_directories=[] + explicit_input_folders
     input_files=[]
     template_files=[]
 
     def on_created(event):
-        print(f"hey, {event.src_path} has been created!")    
+        print(f"hey, {event.src_path} has been created!")  
+        folder = os.path.dirname(event.src_path)  
+        if folder in explicit_input_folders and event.src_path not in args.gen_input_file:
+            args.gen_input_file.append(event.src_path)
  
     def on_deleted(event):
         print(f"what the f**k! Someone deleted {event.src_path}!")
+        try:
+            args.gen_input_file.remove(event.src_path)
+        except:
+            pass
 
     def on_modified(event):
         if type(event) is not FileModifiedEvent:
             return
         print(f"hey buddy, {event.src_path} has been modified")
-        if event.src_path in input_files:
+        
+        folder = os.path.dirname(event.src_path)
+        if event.src_path in input_files or folder in explicit_input_folders:
             print("INPUTFILE")
             # todo only specific file(s)
             do_generate()
@@ -1449,6 +1472,15 @@ if start_runtime:
 
     def on_moved(event):
         print(f"ok ok ok, someone moved {event.src_path} to {event.dest_path}")
+        if event.src_path in args.gen_input_file:
+            args.gen_input_file.remove(event.src_path)
+            new_folder = os.path.dirname(event.dest_path)
+
+            if new_folder in explicit_input_folders:
+                #only add if the folder stays the same or it is copied to one of the explicit ones
+                #TODO: I guess only the explicit ones should count as I set the 
+                args.gen_input_file.append(event.dest_path)
+
 
     patterns = ["*"]
     ignore_patterns = None

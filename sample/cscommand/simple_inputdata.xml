@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<root xmlns="https://dtCommand.com"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="https://dtCommand.com gen/xsd/dtCommand.xsd">
+
+<commands namespace="server">
+    <command commandId="1000" name="Ping" server="true"/>
+    <command commandId="2000" name="Pong" client="true"/>
+</commands>
+
+
+</root>

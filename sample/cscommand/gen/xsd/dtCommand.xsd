@@ -1,0 +1,76 @@
+<?xml version="1.0" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://dtCommand.com" xmlns="https://dtCommand.com" elementFormDefault="qualified">
+	<xs:simpleType name="cstype" final="restriction">
+		<xs:union>
+			<xs:simpleType>
+				<xs:restriction base="xs:string"/>
+			</xs:simpleType>
+			<xs:simpleType>
+				<xs:restriction base="xs:string">
+					<xs:enumeration value="float"/>
+					<xs:enumeration value="int"/>
+					<xs:enumeration value="string"/>
+				</xs:restriction>
+			</xs:simpleType>
+		</xs:union>
+	</xs:simpleType>
+	<xs:element name="root">
+		<xs:complexType>
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="commands">
+					<xs:complexType>
+						<xs:choice minOccurs="0" maxOccurs="unbounded">
+							<xs:element name="command">
+								<xs:complexType>
+									<xs:choice minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="enum">
+											<xs:complexType>
+												<xs:choice minOccurs="0" maxOccurs="unbounded">
+													<xs:element name="item">
+														<xs:complexType>
+															<xs:attribute name="name" type="xs:string" use="required"/>
+															<xs:attribute name="value" type="xs:string"/>
+														</xs:complexType>
+													</xs:element>
+													<xs:element name="rip">
+														<xs:complexType/>
+													</xs:element>
+												</xs:choice>
+												<xs:attribute name="name" type="xs:string" use="required"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="field">
+											<xs:complexType>
+												<xs:attribute name="default" type="xs:string"/>
+												<xs:attribute name="key" type="xs:string"/>
+												<xs:attribute name="name" type="xs:string" use="required"/>
+												<xs:attribute name="private" type="xs:string"/>
+												<xs:attribute name="rip" type="xs:string"/>
+												<xs:attribute name="type" type="cstype" use="required"/>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="rip">
+											<xs:complexType>
+												<xs:attribute name="type" type="cstype"/>
+											</xs:complexType>
+										</xs:element>
+									</xs:choice>
+									<xs:attribute name="client" type="xs:string"/>
+									<xs:attribute name="commandId" type="xs:string" use="required"/>
+									<xs:attribute name="name" type="xs:string" use="required"/>
+									<xs:attribute name="server" type="xs:string"/>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="using">
+								<xs:complexType>
+									<xs:attribute name="name" type="xs:string" use="required"/>
+								</xs:complexType>
+							</xs:element>
+						</xs:choice>
+						<xs:attribute name="namespace" type="xs:string" use="required"/>
+					</xs:complexType>
+				</xs:element>
+			</xs:choice>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
