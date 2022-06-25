@@ -46,7 +46,9 @@ Block-Decorators:
   ```
    /*name:type|enum:int,ctype*/int/*endname*/ intValue=0;  
   ```
-- |enum_mod : e.g. for default modification: 
+- |enum_add : add a name to a specific enum
+  * enum_add:ctype
+- |enum_mod : modifies an enum-output for a specific enum-item: 
   * enum_mod:type,float,%sf    <--append f
   * enum_mod:type,string,"%s"  <--wrap in dquotes
 - |enum_strict : only available enum-values are possible, not freetext

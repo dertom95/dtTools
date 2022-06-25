@@ -81,7 +81,7 @@
             "program": "${workspaceFolder}/gen.py",
             "args" : [
                 "--config-file","${workspaceFolder}/sample/combi_cpp_cscommand/config.json",
-                // "--start-runtime","true"
+                "--start-runtime","true"
             ],
             "console": "integratedTerminal"
         },          

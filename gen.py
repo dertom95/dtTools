@@ -6,7 +6,7 @@ from pydoc import resolve
 from time import sleep
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
-from watchdog.events import PatternMatchingEventHandler
+from watchdog.events import PatternMatchingEventHandler,FileModifiedEvent
 from watchdog.observers import Observer
 
 generation_root=None
@@ -1353,10 +1353,13 @@ if verbose:
 
 
 did_action = False
+generation_root = os.path.abspath(args.gen_root_folder)
 
-if has_input_files:
-    # "/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml"
-    generation_root = os.path.abspath(args.gen_root_folder)
+results = None
+
+def do_generate():
+    global did_action,results
+
     try:
         os.makedirs(generation_root)
     except:
@@ -1382,29 +1385,36 @@ if has_input_files:
                 # create a simple one to have all this xsd-stuff filled out for you
                 boilerplate_xml="""<?xml version="1.0"?>
 
-<{0} xmlns="https://{1}.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://{1}.com {2}">
+    <{0} xmlns="https://{1}.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://{1}.com {2}">
 
-</{0}>      
+    </{0}>      
                 """.format('root',args.xsd_schema_name,xml_xsd_path)
                 # write boilerplate
                 new_file = open(input_file,"w")
                 new_file.write(boilerplate_xml)
                 new_file.close()
 
-if hasattr(args,"xsd_output"):
-    xsd_schema = gen.generateXSD(args.xsd_schema_name) # clazz
-    xsd_file_path = os.path.abspath(args.xsd_output)
-    xsd_folder = os.path.dirname(xsd_file_path)
-    try:
-        os.makedirs(xsd_folder)
-    except:
-        pass        
-    f = open(xsd_file_path,"w")
-    f.write(xsd_schema)
-    f.truncate()
-    f.close()
-    did_action=True
 
+if has_input_files:
+    do_generate()
+
+def do_xsd_output():
+    global did_action
+    if hasattr(args,"xsd_output"):
+        xsd_schema = gen.generateXSD(args.xsd_schema_name) # clazz
+        xsd_file_path = os.path.abspath(args.xsd_output)
+        xsd_folder = os.path.dirname(xsd_file_path)
+        try:
+            os.makedirs(xsd_folder)
+        except:
+            pass        
+        f = open(xsd_file_path,"w")
+        f.write(xsd_schema)
+        f.truncate()
+        f.close()
+        did_action=True
+
+do_xsd_output()
 
 if not did_action:
     print("neither --xsd-output nor --input-file were set!!! NOTHING TO DO")    
@@ -1412,6 +1422,10 @@ if not did_action:
 
 
 if start_runtime:
+    watch_directories=[]
+    input_files=[]
+    template_files=[]
+
     def on_created(event):
         print(f"hey, {event.src_path} has been created!")    
  
@@ -1419,7 +1433,18 @@ if start_runtime:
         print(f"what the f**k! Someone deleted {event.src_path}!")
 
     def on_modified(event):
+        if type(event) is not FileModifiedEvent:
+            return
         print(f"hey buddy, {event.src_path} has been modified")
+        if event.src_path in input_files:
+            print("INPUTFILE")
+            # todo only specific file(s)
+            do_generate()
+            do_xsd_output()
+        elif event.src_path in template_files:
+            print("TEMPLATE CHANGED")
+            do_xsd_output()
+            do_generate()
 
     def on_moved(event):
         print(f"ok ok ok, someone moved {event.src_path} to {event.dest_path}")
@@ -1435,10 +1460,31 @@ if start_runtime:
     my_event_handler.on_modified = on_modified
     my_event_handler.on_moved = on_moved
 
-    path = "."
+    # find out what directories to watch:
+
+    # watch input files (that keeps the data)
+    if has_input_files:
+        for input_file in args.gen_input_file:
+            dir = os.path.dirname(input_file)
+            dir = os.path.normpath(dir)
+            if dir not in watch_directories:
+                watch_directories.append(dir)
+            input_files.append(os.path.normpath(input_file))
+    
+    for template in C.config["templates"]:
+        template_file = template["path"]
+        dir = os.path.dirname(template_file)
+        dir = os.path.normpath(dir)
+        if dir not in watch_directories:
+            watch_directories.append(dir)
+        template_files.append(os.path.normpath(template_file))
+    
+
+    #path = "."
     go_recursively = True
     my_observer = Observer()
-    my_observer.schedule(my_event_handler, path, recursive=go_recursively)
+    for path in watch_directories:
+        my_observer.schedule(my_event_handler, path, recursive=False)
     my_observer.start()
 
     try:
