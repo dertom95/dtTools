@@ -42,12 +42,14 @@ Block-Decorators:
   ```
   /*name:name|echo:%s_%s,@class.name,@*/Audio_SetMode/*endname*/
   ```
-- |enum:key,enum_name *captures input as enum value for the corresponding key. alle enums captures under this enum_name will be options for this input*/
+- |enum:key,enum_name *captures input as enum value for the corresponding key. all enums captured under this enum_name will be options for this input*/
   ```
    /*name:type|enum:int,ctype*/int/*endname*/ intValue=0;  
   ```
-- |enum_mod
-- |enum_strict
+- |enum_mod : e.g. for default modification: 
+  * enum_mod:type,float,%sf    <--append f
+  * enum_mod:type,string,"%s"  <--wrap in dquotes
+- |enum_strict : only available enum-values are possible, not freetext
 - |default : value that is used in the template
 - |map
 - |getmap

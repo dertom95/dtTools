@@ -3,8 +3,11 @@
 import io
 import json,os,sys,re
 from pydoc import resolve
+from time import sleep
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+from watchdog.events import PatternMatchingEventHandler
+from watchdog.observers import Observer
 
 generation_root=None
 option_force_overwrite=False
@@ -233,43 +236,8 @@ class TTName:
                     continue
                 info = splits[1].split(",")
                 name = name.replace(info[0],info[1])
-            elif deco_id =="enum":
-                info = splits[1].split(",")
-                
-                enum_item_name=None
-                enum_name=None
-
-                if len(info)==1:
-                    enum_name=info[0]
-                else:
-                    enum_item_name=info[0]
-                    enum_name=info[1]
-
-                if not runtime_mode:
-                    self.enum_type=enum_name
-                    if enum_item_name:
-                        self.ctx.add_enum(enum_name,enum_item_name,self.default_value)
-                    else:
-                        # ignore add_enum for this decorator as it is just reading the enum
-                        pass
-                else:
-                    value = self.ctx.get_enum_item(enum_name,name)
-                    if value: 
-                        name = self.ctx.get_enum_item(enum_name,name)
-                    else:
-                        if not self.ctx.is_enum_strict(enum_name):
-                            #unknown type but its ok because not strict
-                            pass
-                        else:
-                            print ("Unknown enum-item:%s" % name)
-                            name = "UNKNOWN"
             elif deco_id =="default":
                 name = self.default_value
-            elif deco_id =="enum_strict":
-                enum_name=splits[1]
-
-                if not runtime_mode:
-                    self.ctx.set_enum_strict(enum_name)
             elif deco_id == "map":
                 if runtime_mode:
                     continue
@@ -360,7 +328,49 @@ class TTName:
             #         varname=vals[1]
             #         varvalue=vals[2]
             #         ifblock=int(vals[0])
+            elif deco_id =="enum":
+                info = splits[1].split(",")
+                
+                enum_item_name=None
+                enum_name=None
 
+                if len(info)==1:
+                    enum_name=info[0]
+                else:
+                    enum_item_name=info[0]
+                    enum_name=info[1]
+
+                if not runtime_mode:
+                    self.enum_type=enum_name
+                    if enum_item_name:
+                        self.ctx.add_enum(enum_name,enum_item_name,self.default_value)
+                    else:
+                        # ignore add_enum for this decorator as it is just reading the enum
+                        pass
+                else:
+                    value = self.ctx.get_enum_item(enum_name,name)
+                    if value: 
+                        name = self.ctx.get_enum_item(enum_name,name)
+                    else:
+                        if not self.ctx.is_enum_strict(enum_name):
+                            #unknown type but its ok because not strict
+                            pass
+                        else:
+                            print ("Unknown enum-item:%s" % name)
+                            name = "UNKNOWN"
+            elif deco_id =="enum_strict":
+                enum_name=splits[1]
+
+                if not runtime_mode:
+                    self.ctx.set_enum_strict(enum_name)
+
+            elif deco_id=="enum_add":
+                enum_name=splits[1]
+                if not self.ctx.runtime_mode:
+                    continue
+                self.ctx.add_enum(enum_name,name,name)
+                
+                
             elif deco_id=="enum_mod":
             # e.g. for default modification:
             # enum_mod:type,float,%sf    <--append f
@@ -491,7 +501,6 @@ class TTBlock:
                 if runtime:
                     continue
                 self.file_overwrite=True
-
             elif deco_id=="file":
                 if not runtime:
                     continue
@@ -843,7 +852,8 @@ class TTGenerator:
                     else:
                         print("unknown config: %s:%s" %(old_key,value))
                         setattr(args,key,value)
-
+            if "templates" not in C.config:
+                C.config["templates"]=[]
             self.load_imports()
 
 
@@ -1325,7 +1335,7 @@ parser.add_argument('--xsd-output', type=str,
                     help='path to xsd output-file') 
 
 parser.add_argument('--gen-inputfile-if-missing',type=bool,help='if the specified input xml-file (--gen-input-file) is not present, create a boilerplate.xml')                  
-
+parser.add_argument('--start-runtime',type=bool,help="start runtime to automatically track modified files and generate specific data")
 args = parser.parse_args()
 
 
@@ -1336,28 +1346,13 @@ has_input_files = hasattr(args,"gen_input_file") and args.gen_input_file!=None a
 option_force_overwrite = args.gen_force_overwrite
 option_gen_inputfile = args.gen_inputfile_if_missing
 verbose = args.verbose
+start_runtime = args.start_runtime
 
 if verbose:
     print("working-directory: %s" % (os.getcwd()))
 
 
 did_action = False
-
-if hasattr(args,"xsd_output"):
-    xsd_schema = gen.generateXSD(args.xsd_schema_name) # clazz
-    xsd_file_path = os.path.abspath(args.xsd_output)
-    xsd_folder = os.path.dirname(xsd_file_path)
-    try:
-        os.makedirs(xsd_folder)
-    except:
-        pass        
-    f = open(xsd_file_path,"w")
-    f.write(xsd_schema)
-    f.truncate()
-    f.close()
-    did_action=True
-
-
 
 if has_input_files:
     # "/home/ttrocha/_dev/projects/python/simplegenerator/clazztest.xml"
@@ -1396,11 +1391,63 @@ if has_input_files:
                 new_file.write(boilerplate_xml)
                 new_file.close()
 
+if hasattr(args,"xsd_output"):
+    xsd_schema = gen.generateXSD(args.xsd_schema_name) # clazz
+    xsd_file_path = os.path.abspath(args.xsd_output)
+    xsd_folder = os.path.dirname(xsd_file_path)
+    try:
+        os.makedirs(xsd_folder)
+    except:
+        pass        
+    f = open(xsd_file_path,"w")
+    f.write(xsd_schema)
+    f.truncate()
+    f.close()
+    did_action=True
 
 
 if not did_action:
     print("neither --xsd-output nor --input-file were set!!! NOTHING TO DO")    
 
+
+
+if start_runtime:
+    def on_created(event):
+        print(f"hey, {event.src_path} has been created!")    
+ 
+    def on_deleted(event):
+        print(f"what the f**k! Someone deleted {event.src_path}!")
+
+    def on_modified(event):
+        print(f"hey buddy, {event.src_path} has been modified")
+
+    def on_moved(event):
+        print(f"ok ok ok, someone moved {event.src_path} to {event.dest_path}")
+
+    patterns = ["*"]
+    ignore_patterns = None
+    ignore_directories = False
+    case_sensitive = True
+    my_event_handler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
+
+    my_event_handler.on_created = on_created
+    my_event_handler.on_deleted = on_deleted
+    my_event_handler.on_modified = on_modified
+    my_event_handler.on_moved = on_moved
+
+    path = "."
+    go_recursively = True
+    my_observer = Observer()
+    my_observer.schedule(my_event_handler, path, recursive=go_recursively)
+    my_observer.start()
+
+    try:
+        while True:
+            sleep(1)
+    except KeyboardInterrupt:
+        my_observer.stop()
+        my_observer.join()
+        
 
 #counter=0
 # for result in results:

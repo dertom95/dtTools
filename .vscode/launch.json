@@ -65,6 +65,27 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "dtGen: cs-command",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen.py",
+            "args" : [
+                "--config-file","${workspaceFolder}/sample/cscommand/config.json"
+            ],
+            "console": "integratedTerminal"
+        },        
+        {
+            "name": "dtGen: combi[cpp+cscommand]",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen.py",
+            "args" : [
+                "--config-file","${workspaceFolder}/sample/combi_cpp_cscommand/config.json",
+                // "--start-runtime","true"
+            ],
+            "console": "integratedTerminal"
+        },          
+        {
             "name": "dtGen: generate commands",
             "type": "python",
             "request": "launch",

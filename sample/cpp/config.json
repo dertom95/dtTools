@@ -3,10 +3,10 @@
     "rootname": "root",
     "config" : {
         "xsd-schema-name":"dtData",
-        "xsd-output":"${configfolder}/output/dtData.xsd",
+        "xsd-output":"${configfolder}/gen/xsd/dtData.xsd",
         "gen-input-file":["${configfolder}/simple_inputdata.xml"],
         "gen-force-overwrite":true,
-        "gen-root-folder":"${configfolder}/output"
+        "gen-root-folder":"${configfolder}/gen/output"
     },
     "templates": [
         {
