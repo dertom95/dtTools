@@ -2,7 +2,7 @@
 
 <root xmlns="https://dtData.com"
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="https://dtData.com gen/xsd/dtData.xsd">
+xsi:schemaLocation="https://dtData.com ../gen/xsd/dtData.xsd">
 
 <class name="Forty">
     <field name="speed" type="float" default="10.0"/>
@@ -22,7 +22,7 @@ xsi:schemaLocation="https://dtData.com gen/xsd/dtData.xsd">
         
     </method> 
     
-</class> 
+</class>   
 
 <class name="SettlerRuntimeComponent">
     <field type="int" name="counter"/> 

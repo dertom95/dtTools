@@ -63,6 +63,7 @@ Block-Decorators:
 </code>
 
 
+TODO: more dynamic decorators for names and blocks
 TODO: FIX If-Blocks
 TODO: enum: dynamic add e.g. classname (runtime have to write in xsd!?)
 TODO: names: global decorators that are valid for all names of this type. (e.g. replace '['=>'<' should be applied to all types so you won't need to add this command everywhere

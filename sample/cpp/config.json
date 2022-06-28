@@ -4,18 +4,19 @@
     "config" : {
         "xsd-schema-name":"dtData",
         "xsd-output":"${configfolder}/gen/xsd/dtData.xsd",
-        "gen-input-file":["${configfolder}/simple_inputdata.xml"],
+        "gen-input-folder":["${configfolder}/input"],
         "gen-force-overwrite":true,
-        "gen-root-folder":"${configfolder}/gen/output"
+        "gen-root-folder":"${configfolder}/gen/output",
+        "start-runtime":true
     },
     "templates": [
         {
             "name": "cpp-header",
-            "path": "templates/simple_cpp.h"
+            "path": "${configfolder}/templates/simple_cpp.h"
         },
         {
             "name": "cpp-body",
-            "path": "templates/simple_cpp.cpp"
+            "path": "${configfolder}/templates/simple_cpp.cpp"
         }
     ]
 }

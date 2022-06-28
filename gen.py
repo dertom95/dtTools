@@ -814,7 +814,15 @@ class ParseContext:
         
     #     return None
 
-
+def resolve_config_values(value):
+    value_type = type(value)
+    if value_type is str:
+        value = value.replace("${configfolder}",C.config_folder)
+    elif value_type is list:
+        for i in range(len(value)):
+            value[i]=resolve_config_values(value[i])
+    return value
+    
 class TTGenerator:
     def __init__(self, config_filepath,args):
         C.args=args
@@ -823,16 +831,6 @@ class TTGenerator:
 
         self.current_template = None
         self.ctx = None
-
-        def resolve_values(value):
-            value_type = type(value)
-            if value_type is str:
-                value = value.replace("${configfolder}",C.config_folder)
-            elif value_type is list:
-                for i in range(len(value)):
-                    value[i]=resolve_values(value[i])
-            return value
-
 
         try:
             file_exists = os.path.isfile(C.config_file_path)
@@ -846,7 +844,7 @@ class TTGenerator:
                     value = confs[key]
                     old_key=key
                     key = key.replace("-","_")
-                    value=resolve_values(value)
+                    value=resolve_config_values(value)
                     if hasattr(args,key):
                         setattr(args,key,value)
                     else:
@@ -854,6 +852,9 @@ class TTGenerator:
                         setattr(args,key,value)
             if "templates" not in C.config:
                 C.config["templates"]=[]
+            else:
+                for idx in range(len(C.config["templates"])):
+                    C.config["templates"][idx]["path"]=resolve_config_values(C.config["templates"][idx]["path"])
             self.load_imports()
 
 
@@ -1107,6 +1108,10 @@ class TTGenerator:
         return allblocks
 
     def executeFromFile(self,xml_data_path,config=None):
+        if not xml_data_path.endswith(".xml"):
+            print("no xml-file:%s" % xml_data_path)
+            return
+
         self.ctx.runtime_mode=True
         # TODO: combine configs somehow
 
@@ -1506,7 +1511,7 @@ if start_runtime:
     
     for template in C.config["templates"]:
         template_file = template["path"]
-        dir = os.path.dirname(template_file)
+        dir = os.path.dirname(os.path.abspath(template_file))
         dir = os.path.normpath(dir)
         if dir not in watch_directories:
             watch_directories.append(dir)

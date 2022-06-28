@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+
+<root xmlns="https://dtData.com"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="https://dtData.com ../gen/xsd/dtData.xsd">
+
+
+<class name="TimeService">
+    <field name="time" type="float" />
+</class>
+ 
+</root>

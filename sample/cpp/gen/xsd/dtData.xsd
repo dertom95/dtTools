@@ -56,7 +56,7 @@
 								</xs:complexType>
 							</xs:element>
 						</xs:choice>
-						<xs:attribute name="name" type="xs:string"/>
+						<xs:attribute name="name" type="xs:string" use="required"/>
 					</xs:complexType>
 				</xs:element>
 			</xs:choice>

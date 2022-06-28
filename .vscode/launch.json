@@ -65,6 +65,21 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "dtGen: ez-test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen.py",
+            "args" : [
+                "--config-file","C:/gentlymad/repo_win/UnityProject/AfterTheEnd/Assets/Scripts/TestGen/cpp/config.json",
+                // "--xsd-schema-name","dtData",
+                // "--xsd-output","sample/cpp/output/dtData.xsd",
+                // "--gen-input-file","sample/cpp/simple_inputdata.xml",
+                // "--gen-force-overwrite","true",
+                // "--gen-root-folder","sample/cpp/output",
+            ],
+            "console": "integratedTerminal"
+        },        
+        {
             "name": "dtGen: cs-command",
             "type": "python",
             "request": "launch",
