@@ -5,6 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "dtGen: create services",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/gen.py",
+            "args" : [
+                "--config-file","${workspaceFolder}/../../UnityProject/Assets/Scripts/Generator/gen_service_config.json"
+            ],
+            "console": "integratedTerminal"
+        },        
+        {
             "name": "dtGen: create schema",
             "type": "python",
             "request": "launch",

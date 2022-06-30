@@ -57,7 +57,10 @@ Block-Decorators:
 - |getmap
 - |if:condition,true-output,false-output
   ```
-  /*name:if|auto|if:@returnType!='void',@default,*/return/*endname*/  
+  /*name:if|auto|if:@returnType!='void',@current,*/return/*endname*/  
+  true and false-outputs can use variables via @-notation.
+  @current=the enclosed value
+  or @varname e.g. Key[@keyid]
   ```
 - |
 </code>

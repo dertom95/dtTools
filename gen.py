@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import io
+import io,pathlib
 import json,os,sys,re,glob
 from pydoc import resolve
 from time import sleep
@@ -89,6 +89,18 @@ class TTName:
         # fake apply for global decorators (enum)
         self.apply_decorators("init")
         # todo: decorators
+    def resolve_vars(self,input):
+        while (True):
+            res=re.findall(r"(\@[a-zA-Z_]+)",input)
+            if not res:
+                break
+            var = res[0]
+            if var=="@current":
+                var=self.default_value
+            varResult = self.ctx.resolve_var(var,'NONE','None')
+            input = input.replace(var,varResult)
+        return input                    
+    
     def has_decorator(self,deco_id):
         return deco_id in self.decorators        
 
@@ -284,10 +296,10 @@ class TTName:
                         if_false=self.default_value
                 
                 while (True):
-                    res=re.match("(\\@[a-zA-Z_]+)",condition)
+                    res=re.findall("(\\@[a-zA-Z_]+)",condition)
                     if not res:
                         break
-                    var = res.group(1)
+                    var=res[0]
                     if var=="@current":
                         var=self.default_value
                     varResult = self.ctx.resolve_var(var,'NONE','None')
@@ -304,9 +316,9 @@ class TTName:
                 condResult = eval(condition)
 
                 if condResult:
-                    name = if_true
+                    name = self.resolve_vars(if_true)
                 else:
-                    name = if_false
+                    name = self.resolve_vars(if_false)
 
             
 
@@ -877,7 +889,11 @@ class TTGenerator:
                     if "templates" in ijson:
                         orig_templates = C.config["templates"]
                         for i_template in ijson["templates"]:
-                            newpath = import_folder+"/"+i_template["path"]
+                            newpath = i_template["path"]
+                            newpath = resolve_config_values(newpath)
+                            if not os.path.isabs(newpath):
+                                newpath = import_folder+"/"+newpath
+
                             if os.path.isfile(newpath):
                                 i_template["path"]=newpath
                                 orig_templates.append(i_template)    
@@ -1383,6 +1399,9 @@ def do_generate():
     except:
         pass
     for input_file in args.gen_input_file:
+        extension = pathlib.Path(input_file).suffix
+        if extension!=".xml":
+            continue
         #input_abs = os.path.abspath(input_file)
         if os.path.exists(input_file):
             result = gen.executeFromFile(input_file)
@@ -1444,11 +1463,12 @@ if start_runtime:
     watch_directories=[] + explicit_input_folders
     input_files=[]
     template_files=[]
+    main_thread_execution=[]
 
     def on_created(event):
         print(f"hey, {event.src_path} has been created!")  
         folder = os.path.dirname(event.src_path)  
-        if folder in explicit_input_folders and event.src_path not in args.gen_input_file:
+        if folder in explicit_input_folders and event.src_path not in args.gen_input_file and event.src_path.lower().endswith(".xml"):
             args.gen_input_file.append(event.src_path)
  
     def on_deleted(event):
@@ -1459,32 +1479,37 @@ if start_runtime:
             pass
 
     def on_modified(event):
+        global main_thread_execution
         if type(event) is not FileModifiedEvent:
             return
         print(f"hey buddy, {event.src_path} has been modified")
-        
-        folder = os.path.dirname(event.src_path)
-        if event.src_path in input_files or folder in explicit_input_folders:
-            print("INPUTFILE")
-            # todo only specific file(s)
-            do_generate()
-            do_xsd_output()
-        elif event.src_path in template_files:
-            print("TEMPLATE CHANGED")
-            gen.parseTemplates()
-            do_xsd_output()
-            do_generate()
+        def exe():
+            folder = os.path.dirname(event.src_path)
+            if event.src_path in input_files or folder in explicit_input_folders and event.src_path.lower().endswith(".xml"):
+                print("INPUTFILE")
+                # todo only specific file(s)
+                do_generate()
+                do_xsd_output()
+            elif event.src_path in template_files:
+                print("TEMPLATE CHANGED")
+                gen.parseTemplates()
+                do_xsd_output()
+                do_generate()
+
+        main_thread_execution.append(exe)
 
     def on_moved(event):
         print(f"ok ok ok, someone moved {event.src_path} to {event.dest_path}")
-        if event.src_path in args.gen_input_file:
-            args.gen_input_file.remove(event.src_path)
-            new_folder = os.path.dirname(event.dest_path)
+        def exe():
+            if event.src_path in args.gen_input_file:
+                args.gen_input_file.remove(event.src_path)
+                new_folder = os.path.dirname(event.dest_path)
 
-            if new_folder in explicit_input_folders:
-                #only add if the folder stays the same or it is copied to one of the explicit ones
-                #TODO: I guess only the explicit ones should count as I set the 
-                args.gen_input_file.append(event.dest_path)
+                if new_folder in explicit_input_folders:
+                    #only add if the folder stays the same or it is copied to one of the explicit ones
+                    #TODO: I guess only the explicit ones should count as I set the 
+                    args.gen_input_file.append(event.dest_path)
+        main_thread_execution.append(exe)
 
 
     patterns = ["*"]
@@ -1522,12 +1547,18 @@ if start_runtime:
     go_recursively = True
     my_observer = Observer()
     for path in watch_directories:
-        my_observer.schedule(my_event_handler, path, recursive=False)
+        if os.path.exists(path):
+            my_observer.schedule(my_event_handler, path, recursive=False)
+        else:
+            print("Unknown watch-path: %s" % path)
     my_observer.start()
 
     try:
         while True:
             sleep(1)
+            for action in main_thread_execution:
+                action()
+            main_thread_execution.clear()
     except KeyboardInterrupt:
         my_observer.stop()
         my_observer.join()
