@@ -15,6 +15,7 @@ Block-Decorators:
 
   /*block:codeflow*//*endblock:codeflow*/
   ```
+- |reference:ref-name : adds reference to this block to be reuse via /*block-ref:ref-name*/../*endblock-ref*/
 
 <code>Name-Decorators:
 - |required : attribute is required
@@ -65,9 +66,43 @@ Block-Decorators:
 - |
 </code>
 
+example-config:
+```
+{
+    "name" : "service-generator",
+    "rootname": "root",
+    "config" : {
+        "xsd-schema-name":"dtEndzone",
+        "xsd-output":"${configfolder}/gen/xsd/dtEndzone.xsd",
+        "gen-input-file":["${configfolder}/input/services/sample.xml"],
+        "gen-input-folder":["${configfolder}/input/services"],
+        "gen-root-folder":"${configfolder}/../Services",
+		"gen-inputfile-if-missing":true,
+        "start-runtime":true
+    },
+    "templates": [
+        {
+            "name": "interface",
+            "path": "${configfolder}/templates/GeneratorServiceInterface.cs",
+            "onlyParse" : true
+        },
+        {
+            "name": "service_impl",
+            "path": "${configfolder}/templates/GeneratorServiceImpl.cs"
+        }
+    ],
+	"imports" : [
+		"gen_clazz.json"
+	]
+}
+```
+
 
 TODO: more dynamic decorators for names and blocks
 TODO: FIX If-Blocks
-TODO: enum: dynamic add e.g. classname (runtime have to write in xsd!?)
+TODO: make blocks cross template referenceable to prevent tedious work of the same stuff. e.g. parameter-block give it an it, and in block create decorator like: /*block:param|ref:service.method.param*/.../*endblock:*/
+TODO: kick rip-blocks from autocompletion (/*block:rip*/) (but it still needs to be processed, because you might have enum-declarations in it)
+TODO: post_n_blast should be really a block-decorator
+~~TODO: enum: dynamic add e.g. classname (runtime have to write in xsd!?)~~
 TODO: names: global decorators that are valid for all names of this type. (e.g. replace '['=>'<' should be applied to all types so you won't need to add this command everywhere
 

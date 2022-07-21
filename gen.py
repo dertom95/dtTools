@@ -64,6 +64,10 @@ class C:
     config = None
     delimiter_start = None
     delimiter_end = None
+    token_blockref_begin_any = None
+    token_blockref_end_any = None
+    token_block_begin_any = None
+    token_block_end_any = None
     rootname = None
 
     def create_id():
@@ -206,7 +210,7 @@ class TTName:
                 if not runtime_mode:
                     continue
                 name = name + splits[1]
-            elif deco_id =="post_n_blast":
+            elif deco_id =="post_n_blast": 
                 if not runtime_mode:
                     continue
 
@@ -236,9 +240,14 @@ class TTName:
                 if elem_idx+1 < elem_length:
                     name = name + output
             elif deco_id =="debug":
-                debug_id = splits[1]
-                if debug_id=="struct" and "[" in name:
-                    a=0
+                try:
+                    debug_id = splits[1]
+                    if debug_id=="runtime" and runtime_mode:
+                        pass
+                    if debug_id=="struct" and "[" in name:
+                        a=0
+                except:
+                    pass
             elif deco_id =="required":
                 if runtime_mode:
                     continue
@@ -250,6 +259,9 @@ class TTName:
                 name = name.replace(info[0],info[1])
             elif deco_id =="default":
                 name = self.default_value
+            elif deco_id =="default_if_none":
+                if name == None:
+                    name = self.default_value
             elif deco_id == "map":
                 if runtime_mode:
                     continue
@@ -431,7 +443,7 @@ class TTBlock:
 
 
     def __init__(self,block_name,all_lines,inner_lines,ctx):
-        self.ctx=ctx
+        self.ctx:ParseContext=ctx
         self.template=ctx.current_template
 
         bn_splits = block_name.split('|')
@@ -451,6 +463,7 @@ class TTBlock:
         self.conditions = [] # a set of conditions that are required to be true for the block to be shown
         self.filename=None
         self.file_overwrite=False
+        self.reference_name=None
 
         self.execute_decorators()
 
@@ -500,6 +513,71 @@ class TTBlock:
 
         return result
 
+
+    def re_find_full_block_ref(self,refblockname,text):
+        blockname_splits=refblockname.split('|')
+        blockname_simple=blockname_splits[0]
+        refblockname=re.escape(refblockname)
+        p = ("%s(BR|block-ref):%s%s(.*?)%s(EBR|endblock-ref)%s") % (C.delimiter_start,refblockname,C.delimiter_end,C.delimiter_start,C.delimiter_end)
+        print("Find full block for blockname:%s with pattern %s" % (refblockname,p) )
+        res = re.search( p,text,re.MULTILINE | re.DOTALL)
+        return res
+
+    def process_references(self,current_block,allblocks):
+        allblocks = allblocks or []
+        while True:
+
+            # find start-block
+            start_result = re.search(C.token_blockref_begin_any,self.inner_lines)
+            if not start_result:
+                break
+
+            ref_name=start_result.group(2)
+
+            # find corresponding endblock
+            result = self.re_find_full_block_ref(ref_name,self.inner_lines)
+
+            if not result:
+                print("Could not find REF-ENDBLOCK for %s" %ref_name)
+                #return allblocks
+
+            all_ref = result.group(0)
+            innertext_ref = result.group(2)
+
+
+            ref_block = self.ctx.get_block_reference(ref_name)
+
+
+            # # find start-block
+            # result = re.search(C.token_block_begin_any,ref_block.all_lines)
+            # if not result:
+            #     break
+
+            # block_name=result.group(2)
+
+            #self.ctx.ttg.parseBlocks(self,ref_block.all_lines,allblocks,True)
+
+            # result = re_find_full_block(block_name,ref_block.all_lines)
+            # all = result.group(0)
+            # innertext = result.group(2)
+            
+            # block = TTBlock(ref_block.block_name,all,innertext,self.ctx)
+            #allblocks.append(ref_block)
+
+            if current_block:
+                current_block.add_block(ref_block)
+                #TODO: check if parent is really not used
+                #block.set_parent(current_block)
+            
+            # # if block.reference_name:
+            # #     self.ctx.add_reference(block.reference_name,block)
+            
+            # # strip the block-content form the overall lines
+            self.inner_lines = self.inner_lines.replace(all_ref,ref_block.get_marker(),1)
+            #current_block.inner_lines=innertext
+
+
+        
 
     def execute_decorators(self,runtime=None):
         for decorator in self.decorators:
@@ -585,10 +663,12 @@ class TTBlock:
                             check_context["ifblocks"][ifblock]=True
 
                         return result
-
-                                        
                     self.conditions.append((check,(varname,ifblock,varvalue)))
-
+            elif deco_id=="reference":
+                # put this block into reference-lookup-table
+                self.reference_name=splits[1]
+            else:
+                raise AttributeError(f"Unknown block-decorator:{deco_id}")
 
     def add_block(self,block):
         if block.block_name not in self.child_blocks:
@@ -703,12 +783,13 @@ class ParseContext:
         self.templates={}
         self.xml_current=None
         self.xml_root=None
-        self.ttg = None
+        self.ttg:TTGenerator = None
         self.runtime_mode = False
         self.current_xml_len = None
         self.current_xml_idx = None
         self.current_xml_tag_idx = {}
         self.current_xml_tag_len = {}
+        self.block_references = {}
         self.stored_lists = None
     
     def count_and_init_xml_tag_length(self,xmlblock):
@@ -760,6 +841,17 @@ class ParseContext:
             if verbose:
                 print("Unknown map-lookup: %s:%s" % (mapname,varkey))
             return default
+
+    def add_block_reference(self,ref_name,block):
+        if ref_name in self.block_references:
+            raise AttributeError(f"reference with name:{ref_name} already registered!")
+        
+        self.block_references[ref_name]=block
+
+    def get_block_reference(self,ref_name:str)->TTBlock:
+        if ref_name not in self.block_references:
+            raise AttributeError(f"tried to reference unknown block-reference: {ref_name}")
+        return self.block_references[ref_name]
 
     def add_enum(self,enum_name,item_name,mapping_name):
         if enum_name not in self.enums:
@@ -835,6 +927,15 @@ def resolve_config_values(value):
             value[i]=resolve_config_values(value[i])
     return value
     
+def re_find_full_block(blockname,text):
+    blockname_splits=blockname.split('|')
+    blockname_simple=blockname_splits[0]
+    blockname=re.escape(blockname)
+    p = ("%s(B|block):%s%s(.*?)%s(EB|endblock):%s%s") % (C.delimiter_start,blockname,C.delimiter_end,C.delimiter_start,blockname_simple,C.delimiter_end)
+    print("Find full block for blockname:%s with pattern %s" % (blockname,p) )
+    res = re.search( p,text,re.MULTILINE | re.DOTALL)
+    return res
+
 class TTGenerator:
     def __init__(self, config_filepath,args):
         C.args=args
@@ -916,25 +1017,19 @@ class TTGenerator:
         C.delimiter_end=re.escape(C.config[C.CONFIG_COMMENT_END])
         C.rootname=C.config[C.CONFIG_ROOT_NAME] or "root"
 
-        self.token_block_begin_any = "%s(B|block):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
-        self.token_block_end_any = "%s(EB|endblock):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
-
-    def re_find_full_block(self,blockname,text):
-        blockname_splits=blockname.split('|')
-        blockname_simple=blockname_splits[0]
-        blockname=re.escape(blockname)
-        p = ("%s(B|block):%s%s(.*?)%s(EB|endblock):%s%s") % (C.delimiter_start,blockname,C.delimiter_end,C.delimiter_start,blockname_simple,C.delimiter_end)
-        print("Find full block for blockname:%s with pattern %s" % (blockname,p) )
-        res = re.search( p,text,re.MULTILINE | re.DOTALL)
-        return res
+        C.token_block_begin_any = "%s(B|block):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
+        C.token_block_end_any = "%s(EB|endblock):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
+        C.token_blockref_begin_any = "%s(BR|block-ref):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
+        C.token_blockref_end_any = "%s(EBR|endblock-ref):(.*?)%s" % (C.delimiter_start,C.delimiter_end)
 
     def parseTemplates(self):
         self.ctx = ParseContext()
         self.ctx.ttg = self
-
+        allblocks=[]
         for template in C.config[C.CONFIG_TEMPLATES]:
             template_name = template["name"]
             template_path = template["path"]
+            print(f"PARSING-TEMPLATE: {template_name}[{template_path}]")
             if not os.path.isabs(template_path):
                 template_path = C.config_folder+"/"+template_path
             
@@ -945,8 +1040,14 @@ class TTGenerator:
                 lines = f.read()
                 self.ctx.current_template=_template=template["template"]=TTTemplate(template_name)
                 self.ctx.templates[template_name]=_template
-                root_block = self.parseTemplate(self.ctx,lines)
+                root_block = self.parseTemplate(self.ctx,lines,allblocks)
                 _template.set_root_block(root_block)
+    
+        for block in allblocks.copy():
+            block.process_references(block,allblocks)
+
+        for block in allblocks:
+            block.process_names()
 
     def generateXSD(self,xsd_name):
         namespace="https://%s.com" % xsd_name
@@ -1076,30 +1177,26 @@ class TTGenerator:
         #print("XSD: %s" % xsd_result)
         return xsd_result
 
-    def parseTemplate(self,ctx,lines):
+    def parseTemplate(self,ctx,lines,allblocks):
         root_block=TTBlock(C.rootname,lines,lines,ctx)
-        allblocks=[root_block]
+        allblocks.append(root_block)
         allblocks=self.parseBlocks(root_block,lines,allblocks)
-
-        for block in allblocks:
-            block.process_names()
-
         return root_block
 
-    def parseBlocks(self,current_block,lines,allblocks=None):
+    def parseBlocks(self,current_block,lines,allblocks=None,ignoreReference=False):
         # parse blocks
         allblocks = allblocks or []
         while True:
 
             # find start-block
-            result = re.search(self.token_block_begin_any,lines)
+            result = re.search(C.token_block_begin_any,lines)
             if not result:
                 break
 
             block_name=result.group(2)
 
             # find corresponding endblock
-            result = self.re_find_full_block(block_name,lines)
+            result = re_find_full_block(block_name,lines)
 
             if not result:
                 print("Could not find ENDBLOCK for %s" %block_name)
@@ -1114,12 +1211,15 @@ class TTGenerator:
                 current_block.add_block(block)
                 block.set_parent(current_block)
             
+            if not ignoreReference and block.reference_name:
+                self.ctx.add_block_reference(block.reference_name,block)
+            
             # strip the block-content form the overall lines
             lines = lines.replace(all,block.get_marker(),1)
             current_block.inner_lines=lines
 
             # recurse into the just created block
-            allblocks=self.parseBlocks(block,innertext,allblocks)
+            allblocks=self.parseBlocks(block,innertext,allblocks,ignoreReference)
         
         return allblocks
 
@@ -1137,7 +1237,11 @@ class TTGenerator:
         file.close()
 
         # convert xml-string to be xml-compliant (e.g. change <bla src="List<string>"/>  to "List&lt;string&gt;"  )
-        result = convert_to_valid_xml(stXmlFile)
+        try:
+            result = convert_to_valid_xml(stXmlFile)
+        except Exception as e:
+            print(f"Invalid xml!:{e}")
+
 
         tree = ET.ElementTree(ET.fromstring(result))
         root = tree.getroot()
@@ -1154,6 +1258,8 @@ class TTGenerator:
         tag = strip_tag(root.tag)
         if tag==C.rootname:
             for template in C.config[C.CONFIG_TEMPLATES]:
+                if "onlyParse" in template and template["onlyParse"]:
+                    continue
                 template_result = self.executeTemplate(template["template"],root)
                 template_results.append({"template":template,"result":template_result})
         result["template_results"]=template_results
@@ -1327,7 +1433,13 @@ class TTGenerator:
             current_result = re.sub(r'\n\s*\n', '\n\n', current_result)            
             if current_block.file_overwrite or option_force_overwrite or not os.path.isfile(output_filename):
                 # save this block as dedicated file and do not include to result
+                try:
+                    dir = os.path.dirname(os.path.normpath(output_filename))
+                    os.makedirs(dir)
+                except:
+                    pass
                 f = open(output_filename,"w")
+                print(f"write content of {current_block.block_name} to:{output_filename}")
                 f.write(current_result)
                 f.close()
             return block_marker
@@ -1557,7 +1669,11 @@ if start_runtime:
         while True:
             sleep(1)
             for action in main_thread_execution:
-                action()
+                try:
+                    action()
+                except Exception as e:
+                    print(f"Got Exception during runtime:{e}")
+
             main_thread_execution.clear()
     except KeyboardInterrupt:
         my_observer.stop()
