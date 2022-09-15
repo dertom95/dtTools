@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/gen.py",
             "args" : [
-                "--config-file","${workspaceFolder}/../../UnityProject/Assets/Plugins/Generator/gen_service_config.json"
+                "--config-file","${workspaceFolder}/../../Endzone2/Assets/Plugins/Generator/gen_service_config.json"
             ],
             "console": "integratedTerminal"
         },        
