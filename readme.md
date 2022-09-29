@@ -65,7 +65,21 @@ Block-Decorators:
   @current=the enclosed value
   or @varname e.g. Key[@keyid]
   ```
-- |
+ 
+</code>
+
+Names can reuse 'names' from another scope. e.g. from the parent block. You only need to identify the reused 'name' with its parent's blockname:  
+e.g. outer.dataName (If outer itself would be a nested block, you won't need to go the whole route from the root element, just the one blockname)  
+
+Let's say we have following(sry, markdown cannot show the right notation):  
+<code>
+/*block:outer*/  
+// /*name:dataName*/All this will be replaced by 'name'/*endname*/  
+  
+/*block:inner*/  
+// reuse outer 'dataName' from within new block: /*name:outer.dataName*/  dataName-Value from outer.dataName comes here/*endname*/  
+/*endblock:inner:*/  
+/*endblock:outer*/  
 </code>
 
 example-config:
