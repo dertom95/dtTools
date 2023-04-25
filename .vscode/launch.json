@@ -27,6 +27,21 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "generate randomID-mappers",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/../testing_idmapping_generator/gen_debug_id_mappings.py",
+            "args" : [
+                "--input-folder","E:/gentlymad/Endzone2-Prototype-Assets/Endzone2-Assets/Assets/PackageContent/EntityDefinitions/Buildings|"
+                ,"--input-folder","E:/gentlymad/Endzone2-Prototype-Assets/Endzone2-Assets/Assets/PackageContent/Resources|GetResourceIdx"
+                ,"--input-folder","E:/gentlymad/Endzone2-Prototype-Assets/Endzone2-Assets/Assets/PackageContent/Professions/|GetProfessionIdxFromRandomID"
+                ,"--input-folder","E:/gentlymad/Endzone2-Prototype-Assets/Endzone2-Assets/Assets/PackageContent/Traders|GetTraderIdxFromRandomID"
+                ,"--output-file","TestOutput.cs"
+
+            ],
+            "console": "integratedTerminal"
+        },        
+        {
             "name": "code",
             "type": "python",
             "request": "launch",
