@@ -640,7 +640,7 @@ class TTBlock:
                         ifblock=int(vals[0])
 
                     def check(check_context,data):
-                        varname,ifblock,varvalue=data
+                        varname,ifblock,varvalue,is_equalcheck=data
                         try:
                             if check_context["ifblocks"][ifblock]==True:
                                 # this if block is already resolved
@@ -663,7 +663,7 @@ class TTBlock:
                             check_context["ifblocks"][ifblock]=True
 
                         return result
-                    self.conditions.append((check,(varname,ifblock,varvalue)))
+                    self.conditions.append((check,(varname,ifblock,varvalue,is_equalcheck)))
             elif deco_id=="reference":
                 # put this block into reference-lookup-table
                 self.reference_name=splits[1]
